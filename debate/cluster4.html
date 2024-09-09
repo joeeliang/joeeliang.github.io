@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THW take the pill", "shape": "dot", "size": 10, "title": "THW take the pill"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THW take the pill", "shape": "dot", "size": 10, "title": "THW take the pill"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "THW take the Blue Pill over the Red Pill", "shape": "dot", "size": 10, "title": "THW take the Blue Pill over the Red Pill"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "TH, as someone with hyperempathy, would not take the pill.", "shape": "dot", "size": 10, "title": "TH, as someone with hyperempathy, would not take the pill."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "TH regrets the demonisation of populist leaders (e.g. Donald Trump, Marine LePen, Jair Bolsonaro)", "shape": "dot", "size": 10, "title": "TH regrets the demonisation of populist leaders (e.g. Donald Trump, Marine LePen, Jair Bolsonaro)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "TH regrets the villainization of people who are perceived to be intently pursuing positions of power", "shape": "dot", "size": 10, "title": "TH regrets the villainization of people who are perceived to be intently pursuing positions of power"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "That we regret the rise of influencers", "shape": "dot", "size": 10, "title": "That we regret the rise of influencers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "That we regret the Trump-Taliban peace deal agreement.", "shape": "dot", "size": 10, "title": "That we regret the Trump-Taliban peace deal agreement."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "That we regret the assassination of Iranian general Qasem Soleimani.", "shape": "dot", "size": 10, "title": "That we regret the assassination of Iranian general Qasem Soleimani."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "That we regret the 2019 election of Alberto Fernandez and Cristina Fernandez de Kirschner in Argentina.", "shape": "dot", "size": 10, "title": "That we regret the 2019 election of Alberto Fernandez and Cristina Fernandez de Kirschner in Argentina."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "TH, as the people of the community, would abandon all research to kill the dragon", "shape": "dot", "size": 10, "title": "TH, as the people of the community, would abandon all research to kill the dragon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "Assuming the One Ring had been destroyed and Sauron defeated, TH, as a Hobbit, would never leave the shire", "shape": "dot", "size": 10, "title": "Assuming the One Ring had been destroyed and Sauron defeated, TH, as a Hobbit, would never leave the shire"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "That we would have preferred the Game of Thrones prequel series to be Bloodmoon over House of the Dragon", "shape": "dot", "size": 10, "title": "That we would have preferred the Game of Thrones prequel series to be Bloodmoon over House of the Dragon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "TH, as Moon-Jae In, Would repatriate North Korean defectors", "shape": "dot", "size": 10, "title": "TH, as Moon-Jae In, Would repatriate North Korean defectors"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "TH, as a swing voter who supported ousting Park Geun-Hye, regrets voting for Moon Jae-In", "shape": "dot", "size": 10, "title": "TH, as a swing voter who supported ousting Park Geun-Hye, regrets voting for Moon Jae-In"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "That we support Moon Jae-In\u0027s attempts to reform The Supreme Prosecutors\u0027 Office of the Republic of Korea.", "shape": "dot", "size": 10, "title": "That we support Moon Jae-In\u0027s attempts to reform The Supreme Prosecutors\u0027 Office of the Republic of Korea."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THW leave Dharma", "shape": "dot", "size": 10, "title": "THW leave Dharma"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THBT Ezra Miller should drop out of the role for future movies in the series", "shape": "dot", "size": 10, "title": "THBT Ezra Miller should drop out of the role for future movies in the series"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "That, as a Hobbit, we would go on a grand adventure", "shape": "dot", "size": 10, "title": "That, as a Hobbit, we would go on a grand adventure"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "That we regret the culture of fearing death", "shape": "dot", "size": 10, "title": "That we regret the culture of fearing death"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "That we regret the rise of True Crime entertainment (e.g Making A Murderer, Serial, Tiger King, The Jinx etc.).", "shape": "dot", "size": 10, "title": "That we regret the rise of True Crime entertainment (e.g Making A Murderer, Serial, Tiger King, The Jinx etc.)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "That we regret the depiction of Supergirl frequently saving the day through idealism and hope", "shape": "dot", "size": 10, "title": "That we regret the depiction of Supergirl frequently saving the day through idealism and hope"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "That we regret the ongoing prominence of cricket in postcolonial countries.", "shape": "dot", "size": 10, "title": "That we regret the ongoing prominence of cricket in postcolonial countries."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "That we regret the belief that individuals possess defined personality traits.", "shape": "dot", "size": 10, "title": "That we regret the belief that individuals possess defined personality traits."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "That we regret narratives that portray human progress as inevitable", "shape": "dot", "size": 10, "title": "That we regret narratives that portray human progress as inevitable"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "TH regrets virtue signalling on social media", "shape": "dot", "size": 10, "title": "TH regrets virtue signalling on social media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "That we regret the removal of Evo Morales as president of Bolivia", "shape": "dot", "size": 10, "title": "That we regret the removal of Evo Morales as president of Bolivia"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "That we support the End of Life Bill", "shape": "dot", "size": 10, "title": "That we support the End of Life Bill"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "That we would aggressively and competitively fund CRISPR", "shape": "dot", "size": 10, "title": "That we would aggressively and competitively fund CRISPR"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "That we would abolish the Goldwater Rule", "shape": "dot", "size": 10, "title": "That we would abolish the Goldwater Rule"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "TH, as Messi, would not have left Barcelona", "shape": "dot", "size": 10, "title": "TH, as Messi, would not have left Barcelona"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "TH, as a star Latin American soccer/football player, would stay in their national league over playing in Europe", "shape": "dot", "size": 10, "title": "TH, as a star Latin American soccer/football player, would stay in their national league over playing in Europe"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "TH regrets the commercial resignification of Historical Heritage", "shape": "dot", "size": 10, "title": "TH regrets the commercial resignification of Historical Heritage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "That we regret the fall of the Societ Union", "shape": "dot", "size": 10, "title": "That we regret the fall of the Societ Union"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "That we regret Hamilton", "shape": "dot", "size": 10, "title": "That we regret Hamilton"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "That, with hindsight, we really do regret Glee", "shape": "dot", "size": 10, "title": "That, with hindsight, we really do regret Glee"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "That we regret the norm that doctors should defer to their patients\u0027 wishes, even where doing so is not in those patients\u0027 best interests.", "shape": "dot", "size": 10, "title": "That we regret the norm that doctors should defer to their patients\u0027 wishes, even where doing so is not in those patients\u0027 best interests."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "That we would not publish this information", "shape": "dot", "size": 10, "title": "That we would not publish this information"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "That, as Melissa, we would reveal the truth to the world", "shape": "dot", "size": 10, "title": "That, as Melissa, we would reveal the truth to the world"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "That we, as Benny Gantz, regret signing the coalition agreement between Likud and the Blue and White alliance.", "shape": "dot", "size": 10, "title": "That we, as Benny Gantz, regret signing the coalition agreement between Likud and the Blue and White alliance."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "TH regrets the narrative that hard work will lead to financial success", "shape": "dot", "size": 10, "title": "TH regrets the narrative that hard work will lead to financial success"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "TH, as Hercules, would go up to the Olympus to live with the Gods", "shape": "dot", "size": 10, "title": "TH, as Hercules, would go up to the Olympus to live with the Gods"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "That we would prefer the Eric Killmonger plot to the Shuri plot", "shape": "dot", "size": 10, "title": "That we would prefer the Eric Killmonger plot to the Shuri plot"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "That we believe that Donkey and Puss should have had a relationship, not Donkey and Dragon", "shape": "dot", "size": 10, "title": "That we believe that Donkey and Puss should have had a relationship, not Donkey and Dragon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "That, as a competitive and socially conscious young Pok\u00e9mon trainer, we would not participate in Pok\u00e9mon battles", "shape": "dot", "size": 10, "title": "That, as a competitive and socially conscious young Pok\u00e9mon trainer, we would not participate in Pok\u00e9mon battles"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "That the Pokemon anime should soon replace Ash as the show\u2019s main protagonist", "shape": "dot", "size": 10, "title": "That the Pokemon anime should soon replace Ash as the show\u2019s main protagonist"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "That, as the fertility doctor, we would tell the young woman the truth.", "shape": "dot", "size": 10, "title": "That, as the fertility doctor, we would tell the young woman the truth."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "TH, as Dr. Anthony Fauci, would publicly and actively call out Trump whenever he gives false medical advice to the general public.", "shape": "dot", "size": 10, "title": "TH, as Dr. Anthony Fauci, would publicly and actively call out Trump whenever he gives false medical advice to the general public."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "TH, as Dr. Anthony Fauci, would publicly and actively call out Trump whenever he gives false medical advice to the general public.", "shape": "dot", "size": 10, "title": "TH, as Dr. Anthony Fauci, would publicly and actively call out Trump whenever he gives false medical advice to the general public."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "TH, as Dr. Anthony Fauci, would publicly and actively call out Trump whenever he gives false medical advice to the general public.", "shape": "dot", "size": 10, "title": "TH, as Dr. Anthony Fauci, would publicly and actively call out Trump whenever he gives false medical advice to the general public."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THW choose to become a horse", "shape": "dot", "size": 10, "title": "THW choose to become a horse"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THR the imagery of medusa being used within the #metoo movement", "shape": "dot", "size": 10, "title": "THR the imagery of medusa being used within the #metoo movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "TH, s such a person, would choose to destroy the evidence", "shape": "dot", "size": 10, "title": "TH, s such a person, would choose to destroy the evidence"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "TH, as Ariana Grande upon being offered to headline at the event, will completely boycott Coachella and turn the offer down.", "shape": "dot", "size": 10, "title": "TH, as Ariana Grande upon being offered to headline at the event, will completely boycott Coachella and turn the offer down."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "As Ariel, THW Choose Nanda instead of Jesse", "shape": "dot", "size": 10, "title": "As Ariel, THW Choose Nanda instead of Jesse"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "TH, as the parents of Jodie and Mary, would separate the twins", "shape": "dot", "size": 10, "title": "TH, as the parents of Jodie and Mary, would separate the twins"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "For the purposes of this debate, you are Oscar Wilde and you are reflecting on your deathbed. TH regrets \"The Picture of Dorian Gray\"", "shape": "dot", "size": 10, "title": "For the purposes of this debate, you are Oscar Wilde and you are reflecting on your deathbed. TH regrets \"The Picture of Dorian Gray\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "TH, as X, would opt to be a sugar baby", "shape": "dot", "size": 10, "title": "TH, as X, would opt to be a sugar baby"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "TH, as the researchers, would have eaten the crops during the siege", "shape": "dot", "size": 10, "title": "TH, as the researchers, would have eaten the crops during the siege"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "That, as Rey Skywalker after the battle of Exegol, we would re-start the Jedi Order", "shape": "dot", "size": 10, "title": "That, as Rey Skywalker after the battle of Exegol, we would re-start the Jedi Order"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "That, as Billie Eilish, we would release a Christmas album", "shape": "dot", "size": 10, "title": "That, as Billie Eilish, we would release a Christmas album"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "That, as Clutch Mami, we would sign with a major record label rather than remain independent", "shape": "dot", "size": 10, "title": "That, as Clutch Mami, we would sign with a major record label rather than remain independent"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "That, as Aman, we would have professed our love and married Naina", "shape": "dot", "size": 10, "title": "That, as Aman, we would have professed our love and married Naina"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "That we believe that Andy should have stayed and worked at Runway", "shape": "dot", "size": 10, "title": "That we believe that Andy should have stayed and worked at Runway"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "That Gotham would be safer if Batman abandoned his \u0027No Killing\u0027 rule", "shape": "dot", "size": 10, "title": "That Gotham would be safer if Batman abandoned his \u0027No Killing\u0027 rule"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "That we believe that the ending of Bojack Horseman series should have been him dying at the end of \u0027The View From Halfway Down\u0027", "shape": "dot", "size": 10, "title": "That we believe that the ending of Bojack Horseman series should have been him dying at the end of \u0027The View From Halfway Down\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "That, as Morty, we would sever ties with Rick", "shape": "dot", "size": 10, "title": "That, as Morty, we would sever ties with Rick"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "Without having regard to future events of the show, That the protagonists of the 100 were wrong to seek to expose the Primes", "shape": "dot", "size": 10, "title": "Without having regard to future events of the show, That the protagonists of the 100 were wrong to seek to expose the Primes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "That Curtis should destroy the train and end humanity rather than taking control.", "shape": "dot", "size": 10, "title": "That Curtis should destroy the train and end humanity rather than taking control."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "In the event of First Contact occurring between humans and extra terrestrial life (aliens) on Earth, THBT humans should react immediately with pre emptive force.", "shape": "dot", "size": 10, "title": "In the event of First Contact occurring between humans and extra terrestrial life (aliens) on Earth, THBT humans should react immediately with pre emptive force."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "That France should abandon the principle of la\u00efcit\u00e9.", "shape": "dot", "size": 10, "title": "That France should abandon the principle of la\u00efcit\u00e9."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "THBT Carrie Lam should resign", "shape": "dot", "size": 10, "title": "THBT Carrie Lam should resign"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "TH, as Mowgli W stay in the jungle", "shape": "dot", "size": 10, "title": "TH, as Mowgli W stay in the jungle"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "TH regrets the ascension of the NIMBY (Not In My Backyard) movement.", "shape": "dot", "size": 10, "title": "TH regrets the ascension of the NIMBY (Not In My Backyard) movement."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THR the narrative that being a nurse is a calling rather than a job", "shape": "dot", "size": 10, "title": "THR the narrative that being a nurse is a calling rather than a job"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "TH as Nicolas Maduro would seek to voluntarily step down from power", "shape": "dot", "size": 10, "title": "TH as Nicolas Maduro would seek to voluntarily step down from power"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "Congratulations, you command the armies of Greece and now have the means to embark on your life goal to sail to and conquer Troy. Alas, you have offended the goddess Artemis who has stymied your plans by sending unfavourable winds. The only way to achieve your goal is to sacrifice your only child and you will win the war. That you should sacrifice your child.", "shape": "dot", "size": 10, "title": "Congratulations, you command the armies of Greece and now have the means to embark on your life goal to sail to and conquer Troy. Alas, you have offended the goddess Artemis who has stymied your plans by sending unfavourable winds. The only way to achieve your goal is to sacrifice your only child and you will win the war. That you should sacrifice your child."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THR the concept of \"The one that got away\"", "shape": "dot", "size": 10, "title": "THR the concept of \"The one that got away\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THA the Vatican regrets the China-Vatican deal on the appointment of Chinese Bishops", "shape": "dot", "size": 10, "title": "THA the Vatican regrets the China-Vatican deal on the appointment of Chinese Bishops"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "That we should adopt the Fisher Suggestion", "shape": "dot", "size": 10, "title": "That we should adopt the Fisher Suggestion"}]);
+                  edges = new vis.DataSet([{"from": 2, "to": 14, "width": 0.1}, {"from": 2, "to": 59, "width": 0.1}, {"from": 2, "to": 62, "width": 0.1}, {"from": 4, "to": 12, "width": 0.1}, {"from": 4, "to": 24, "width": 0.1}, {"from": 4, "to": 52, "width": 0.1}, {"from": 4, "to": 75, "width": 0.1}, {"from": 4, "to": 77, "width": 0.1}, {"from": 6, "to": 10, "width": 0.1}, {"from": 6, "to": 29, "width": 0.1}, {"from": 7, "to": 8, "width": 0.1}, {"from": 7, "to": 78, "width": 0.1}, {"from": 8, "to": 78, "width": 0.1}, {"from": 9, "to": 61, "width": 0.1}, {"from": 10, "to": 28, "width": 0.1}, {"from": 12, "to": 20, "width": 0.1}, {"from": 12, "to": 23, "width": 0.1}, {"from": 12, "to": 24, "width": 0.1}, {"from": 12, "to": 40, "width": 0.1}, {"from": 12, "to": 51, "width": 0.1}, {"from": 12, "to": 55, "width": 0.1}, {"from": 12, "to": 56, "width": 0.1}, {"from": 12, "to": 57, "width": 0.1}, {"from": 12, "to": 75, "width": 0.1}, {"from": 12, "to": 76, "width": 0.1}, {"from": 12, "to": 77, "width": 0.1}, {"from": 13, "to": 20, "width": 0.1}, {"from": 13, "to": 25, "width": 0.1}, {"from": 13, "to": 64, "width": 0.1}, {"from": 14, "to": 59, "width": 0.1}, {"from": 14, "to": 62, "width": 0.1}, {"from": 16, "to": 72, "width": 0.1}, {"from": 18, "to": 20, "width": 0.1}, {"from": 18, "to": 26, "width": 0.1}, {"from": 18, "to": 51, "width": 0.1}, {"from": 20, "to": 22, "width": 0.1}, {"from": 20, "to": 23, "width": 0.1}, {"from": 20, "to": 24, "width": 0.1}, {"from": 20, "to": 26, "width": 0.1}, {"from": 20, "to": 33, "width": 0.1}, {"from": 20, "to": 40, "width": 0.1}, {"from": 20, "to": 50, "width": 0.1}, {"from": 20, "to": 51, "width": 0.1}, {"from": 20, "to": 52, "width": 0.1}, {"from": 20, "to": 55, "width": 0.1}, {"from": 20, "to": 56, "width": 0.1}, {"from": 20, "to": 57, "width": 0.1}, {"from": 20, "to": 75, "width": 0.1}, {"from": 20, "to": 76, "width": 0.1}, {"from": 20, "to": 77, "width": 0.1}, {"from": 21, "to": 25, "width": 0.1}, {"from": 21, "to": 45, "width": 0.1}, {"from": 21, "to": 64, "width": 0.1}, {"from": 22, "to": 24, "width": 0.1}, {"from": 22, "to": 26, "width": 0.1}, {"from": 22, "to": 33, "width": 0.1}, {"from": 22, "to": 51, "width": 0.1}, {"from": 22, "to": 52, "width": 0.1}, {"from": 22, "to": 55, "width": 0.1}, {"from": 22, "to": 56, "width": 0.1}, {"from": 22, "to": 75, "width": 0.1}, {"from": 22, "to": 76, "width": 0.1}, {"from": 22, "to": 77, "width": 0.1}, {"from": 23, "to": 24, "width": 0.1}, {"from": 23, "to": 26, "width": 0.1}, {"from": 23, "to": 29, "width": 0.1}, {"from": 23, "to": 33, "width": 0.1}, {"from": 23, "to": 40, "width": 0.1}, {"from": 23, "to": 51, "width": 0.1}, {"from": 23, "to": 52, "width": 0.1}, {"from": 23, "to": 55, "width": 0.1}, {"from": 23, "to": 56, "width": 0.1}, {"from": 23, "to": 57, "width": 0.1}, {"from": 23, "to": 75, "width": 0.1}, {"from": 23, "to": 77, "width": 0.1}, {"from": 24, "to": 26, "width": 0.1}, {"from": 24, "to": 33, "width": 0.1}, {"from": 24, "to": 40, "width": 0.1}, {"from": 24, "to": 50, "width": 0.1}, {"from": 24, "to": 51, "width": 0.1}, {"from": 24, "to": 52, "width": 0.1}, {"from": 24, "to": 53, "width": 0.1}, {"from": 24, "to": 55, "width": 0.1}, {"from": 24, "to": 56, "width": 0.1}, {"from": 24, "to": 57, "width": 0.1}, {"from": 24, "to": 63, "width": 0.1}, {"from": 24, "to": 75, "width": 0.1}, {"from": 24, "to": 76, "width": 0.1}, {"from": 24, "to": 77, "width": 0.1}, {"from": 25, "to": 64, "width": 0.1}, {"from": 26, "to": 33, "width": 0.1}, {"from": 26, "to": 51, "width": 0.1}, {"from": 26, "to": 52, "width": 0.1}, {"from": 26, "to": 53, "width": 0.1}, {"from": 26, "to": 55, "width": 0.1}, {"from": 26, "to": 56, "width": 0.1}, {"from": 26, "to": 63, "width": 0.1}, {"from": 26, "to": 75, "width": 0.1}, {"from": 26, "to": 76, "width": 0.1}, {"from": 26, "to": 77, "width": 0.1}, {"from": 28, "to": 48, "width": 0.1}, {"from": 29, "to": 38, "width": 0.1}, {"from": 29, "to": 44, "width": 0.1}, {"from": 30, "to": 41, "width": 0.1}, {"from": 33, "to": 40, "width": 0.1}, {"from": 33, "to": 51, "width": 0.1}, {"from": 33, "to": 52, "width": 0.1}, {"from": 33, "to": 55, "width": 0.1}, {"from": 33, "to": 56, "width": 0.1}, {"from": 33, "to": 57, "width": 0.1}, {"from": 33, "to": 75, "width": 0.1}, {"from": 33, "to": 77, "width": 0.1}, {"from": 36, "to": 45, "width": 0.1}, {"from": 40, "to": 51, "width": 0.1}, {"from": 40, "to": 55, "width": 0.1}, {"from": 40, "to": 56, "width": 0.1}, {"from": 50, "to": 55, "width": 0.1}, {"from": 50, "to": 56, "width": 0.1}, {"from": 51, "to": 52, "width": 0.1}, {"from": 51, "to": 55, "width": 0.1}, {"from": 51, "to": 56, "width": 0.1}, {"from": 51, "to": 57, "width": 0.1}, {"from": 51, "to": 75, "width": 0.1}, {"from": 51, "to": 76, "width": 0.1}, {"from": 52, "to": 53, "width": 0.1}, {"from": 52, "to": 55, "width": 0.1}, {"from": 52, "to": 56, "width": 0.1}, {"from": 52, "to": 75, "width": 0.1}, {"from": 52, "to": 76, "width": 0.1}, {"from": 52, "to": 77, "width": 0.1}, {"from": 55, "to": 56, "width": 0.1}, {"from": 55, "to": 57, "width": 0.1}, {"from": 55, "to": 75, "width": 0.1}, {"from": 55, "to": 77, "width": 0.1}, {"from": 56, "to": 57, "width": 0.1}, {"from": 56, "to": 63, "width": 0.1}, {"from": 56, "to": 75, "width": 0.1}, {"from": 56, "to": 76, "width": 0.1}, {"from": 56, "to": 77, "width": 0.1}, {"from": 57, "to": 63, "width": 0.1}, {"from": 59, "to": 62, "width": 0.1}, {"from": 69, "to": 70, "width": 0.1}, {"from": 69, "to": 71, "width": 0.1}, {"from": 70, "to": 71, "width": 0.1}, {"from": 75, "to": 76, "width": 0.1}, {"from": 75, "to": 77, "width": 0.1}, {"from": 76, "to": 77, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

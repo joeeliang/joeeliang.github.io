@@ -1,0 +1,381 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1980px;
+                 height: 1500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<div id="loadingBar">
+<div class="outerBorder">
+<div id="text">0%</div>
+<div id="border">
+<div id="bar"></div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THP a world in which all people share the same physical appearance", "shape": "dot", "size": 10, "title": "THP a world in which all people share the same physical appearance"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THP a world where women cannot perceive aesthetic beauty", "shape": "dot", "size": 10, "title": "THP a world where women cannot perceive aesthetic beauty"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THP a world where humans cannot perceive aesthetic beauty", "shape": "dot", "size": 10, "title": "THP a world where humans cannot perceive aesthetic beauty"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "THP a world where people cannot lie", "shape": "dot", "size": 10, "title": "THP a world where people cannot lie"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THP a world where all humans are born as adults", "shape": "dot", "size": 10, "title": "THP a world where all humans are born as adults"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 116, "label": "THP a wolrd in which every aspect of one\u0027s physical experience is indistinguishable from that of other people", "shape": "dot", "size": 10, "title": "THP a wolrd in which every aspect of one\u0027s physical experience is indistinguishable from that of other people"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 133, "label": "THP a world in which people exclusively idolise people they know", "shape": "dot", "size": 10, "title": "THP a world in which people exclusively idolise people they know"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THR the rise of Kpop culture", "shape": "dot", "size": 10, "title": "THR the rise of Kpop culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THR the rise of KPop culture", "shape": "dot", "size": 10, "title": "THR the rise of KPop culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THR the glorification of start up culture", "shape": "dot", "size": 10, "title": "THR the glorification of start up culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "THR the rise of cancel culture", "shape": "dot", "size": 10, "title": "THR the rise of cancel culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "THR the rise of Nihilism in popular culture", "shape": "dot", "size": 10, "title": "THR the rise of Nihilism in popular culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THW choose to live in an Anarchist World", "shape": "dot", "size": 10, "title": "THW choose to live in an Anarchist World"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THW choose to live in the Anarchistic World", "shape": "dot", "size": 10, "title": "THW choose to live in the Anarchistic World"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "THS the creation of anarchy zones", "shape": "dot", "size": 10, "title": "THS the creation of anarchy zones"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THO the centrality of national identity in sport", "shape": "dot", "size": 10, "title": "THO the centrality of national identity in sport"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "That we prefer a world where sports are not commercialised", "shape": "dot", "size": 10, "title": "That we prefer a world where sports are not commercialised"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THR the glorification of humility", "shape": "dot", "size": 10, "title": "THR the glorification of humility"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THR the glorification of suffering in art", "shape": "dot", "size": 10, "title": "THR the glorification of suffering in art"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THR the normalisation of mediocrity culture", "shape": "dot", "size": 10, "title": "THR the normalisation of mediocrity culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 101, "label": "THR the glorification of youth", "shape": "dot", "size": 10, "title": "THR the glorification of youth"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 102, "label": "THR the glamourization of start-up culture that encourages people to start their own businesses rather than pursuing traditional career paths", "shape": "dot", "size": 10, "title": "THR the glamourization of start-up culture that encourages people to start their own businesses rather than pursuing traditional career paths"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 105, "label": "THO the glorification of courage in popular culture", "shape": "dot", "size": 10, "title": "THO the glorification of courage in popular culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THR the rise of political centrism", "shape": "dot", "size": 10, "title": "THR the rise of political centrism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 111, "label": "THS the rise of disaster capitalism", "shape": "dot", "size": 10, "title": "THS the rise of disaster capitalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THP a world where epistemic humility is universally embraced", "shape": "dot", "size": 10, "title": "THP a world where epistemic humility is universally embraced"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "THR the glorification of the concept of genius", "shape": "dot", "size": 10, "title": "THR the glorification of the concept of genius"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THR the romanticisation of art that is pursued for non material gain", "shape": "dot", "size": 10, "title": "THR the romanticisation of art that is pursued for non material gain"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THP a society where people feel a strong obligation to sacrifice their own interests for the interests of their immediate community, rather than follow their own interests", "shape": "dot", "size": 10, "title": "THP a society where people feel a strong obligation to sacrifice their own interests for the interests of their immediate community, rather than follow their own interests"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THP a society that heavily emphasises collectivism rather than individualism", "shape": "dot", "size": 10, "title": "THP a society that heavily emphasises collectivism rather than individualism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THR the rise of Philanthrocapitalism", "shape": "dot", "size": 10, "title": "THR the rise of Philanthrocapitalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 121, "label": "TH regrets the rise of philanthrocapitalism", "shape": "dot", "size": 10, "title": "TH regrets the rise of philanthrocapitalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THW prefer a world where nobody has the ability to lie", "shape": "dot", "size": 10, "title": "THW prefer a world where nobody has the ability to lie"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "THP a world without lying", "shape": "dot", "size": 10, "title": "THP a world without lying"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 120, "label": "TH prefers a world where humans are assumed to be inherently good as opposed to a world where humans are assumed to be inherently evil", "shape": "dot", "size": 10, "title": "TH prefers a world where humans are assumed to be inherently good as opposed to a world where humans are assumed to be inherently evil"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 127, "label": "THP a world with radical honesty", "shape": "dot", "size": 10, "title": "THP a world with radical honesty"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THR the emphasis placed on individuals to sacrifice their own happiness for their families", "shape": "dot", "size": 10, "title": "THR the emphasis placed on individuals to sacrifice their own happiness for their families"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THP a world where people prioritise Eudaimonic happiness over Hedonic happiness", "shape": "dot", "size": 10, "title": "THP a world where people prioritise Eudaimonic happiness over Hedonic happiness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THBT it is justified for an individual to prioritise their own self-interest over alleviating universal suffering.", "shape": "dot", "size": 10, "title": "THBT it is justified for an individual to prioritise their own self-interest over alleviating universal suffering."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "THR the predominant narrative that one should strive to make a meaningful impact on the world even at the expense of one\u2019s own happiness", "shape": "dot", "size": 10, "title": "THR the predominant narrative that one should strive to make a meaningful impact on the world even at the expense of one\u2019s own happiness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "Given the technology to accurately measure and transfer happiness, THW progressively tax and redistribute happiness", "shape": "dot", "size": 10, "title": "Given the technology to accurately measure and transfer happiness, THW progressively tax and redistribute happiness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "That we regret the stigmatisation of hedonistic lifestyles", "shape": "dot", "size": 10, "title": "That we regret the stigmatisation of hedonistic lifestyles"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 115, "label": "THP a world in which individuals did not feel strong emotions", "shape": "dot", "size": 10, "title": "THP a world in which individuals did not feel strong emotions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 128, "label": "Given the technology to accurately measure and transfer happiness, THW progressively tax and redistribute happiness.", "shape": "dot", "size": 10, "title": "Given the technology to accurately measure and transfer happiness, THW progressively tax and redistribute happiness."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THP a world in which the majority of people believe in moral pessimism rather than moral optimism.", "shape": "dot", "size": 10, "title": "THP a world in which the majority of people believe in moral pessimism rather than moral optimism."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THR the social preference for positivity and optimism", "shape": "dot", "size": 10, "title": "THR the social preference for positivity and optimism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "THP a world in which most people are determinists to a world in which most people believe in free will", "shape": "dot", "size": 10, "title": "THP a world in which most people are determinists to a world in which most people believe in free will"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 112, "label": "THP a world in which the dominant societal world-view is a realistic one rather than an optimistic one", "shape": "dot", "size": 10, "title": "THP a world in which the dominant societal world-view is a realistic one rather than an optimistic one"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 113, "label": "THP a world in which people don\u0027t engage in virtue signalling", "shape": "dot", "size": 10, "title": "THP a world in which people don\u0027t engage in virtue signalling"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THP a world where the average person experiences substantially less intense emotions", "shape": "dot", "size": 10, "title": "THP a world where the average person experiences substantially less intense emotions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "TH prefers a world where individuals engage in interpersonal discourse with little to no emotions, as opposed to with strong emotions", "shape": "dot", "size": 10, "title": "TH prefers a world where individuals engage in interpersonal discourse with little to no emotions, as opposed to with strong emotions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 108, "label": "THP a world where people are unable to forget their life experiences", "shape": "dot", "size": 10, "title": "THP a world where people are unable to forget their life experiences"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THO the glorification of maximising productivity (for example: the rise of productivity influencers, long working hours being generally seen as admirable)", "shape": "dot", "size": 10, "title": "THO the glorification of maximising productivity (for example: the rise of productivity influencers, long working hours being generally seen as admirable)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THO the glorification of career achievements as a basis for self worth", "shape": "dot", "size": 10, "title": "THO the glorification of career achievements as a basis for self worth"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THR the narrative that resilience is a virtue", "shape": "dot", "size": 10, "title": "THR the narrative that resilience is a virtue"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THO the glorification of self-reliance in creating narratives of success", "shape": "dot", "size": 10, "title": "THO the glorification of self-reliance in creating narratives of success"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THBT the Global Middle Class shoudl adopt a nihilist outlook on life", "shape": "dot", "size": 10, "title": "THBT the Global Middle Class shoudl adopt a nihilist outlook on life"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "TH opposes the narrative that career achievements and successes are intrinsically valuable", "shape": "dot", "size": 10, "title": "TH opposes the narrative that career achievements and successes are intrinsically valuable"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THS the gamification of the workplace", "shape": "dot", "size": 10, "title": "THS the gamification of the workplace"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "That we support gamification in the workplace.", "shape": "dot", "size": 10, "title": "That we support gamification in the workplace."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THO the ideology of globalism", "shape": "dot", "size": 10, "title": "THO the ideology of globalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THP to live in a world with one dominant global power, rather than in a world with several competing global powers", "shape": "dot", "size": 10, "title": "THP to live in a world with one dominant global power, rather than in a world with several competing global powers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "THO Arab nationalism", "shape": "dot", "size": 10, "title": "THO Arab nationalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 107, "label": "TH prefers a world with a widespread belief in radical freedom", "shape": "dot", "size": 10, "title": "TH prefers a world with a widespread belief in radical freedom"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THW prefer a world where memory is permanent and infallible", "shape": "dot", "size": 10, "title": "THW prefer a world where memory is permanent and infallible"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "THS the creation of children\u0027s literature which teaches that people are neither good nor evil", "shape": "dot", "size": 10, "title": "THS the creation of children\u0027s literature which teaches that people are neither good nor evil"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "That we support the creation of children\u0027s literature which teaches that people are neither good nor evil.", "shape": "dot", "size": 10, "title": "That we support the creation of children\u0027s literature which teaches that people are neither good nor evil."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 110, "label": "THR the narrative that humans are innately bad", "shape": "dot", "size": 10, "title": "THR the narrative that humans are innately bad"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "That we would prefer working from home to become the norm for office workers", "shape": "dot", "size": 10, "title": "That we would prefer working from home to become the norm for office workers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "That we prefer a world where cooperatives (employee owned businesses) were the norm.", "shape": "dot", "size": 10, "title": "That we prefer a world where cooperatives (employee owned businesses) were the norm."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THR the romanticization of staying productive while working from home amidst the pandemic", "shape": "dot", "size": 10, "title": "THR the romanticization of staying productive while working from home amidst the pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THR the narrative that we should derive meaning from work", "shape": "dot", "size": 10, "title": "THR the narrative that we should derive meaning from work"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 119, "label": "THR cancel culture", "shape": "dot", "size": 10, "title": "THR cancel culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THW embrace the rise of private cities (i.e. Eko Atlantic,Tatu City,Hope City,Cite le Flueve)", "shape": "dot", "size": 10, "title": "THW embrace the rise of private cities (i.e. Eko Atlantic,Tatu City,Hope City,Cite le Flueve)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "THS the rise of private cities", "shape": "dot", "size": 10, "title": "THS the rise of private cities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THP a world where Homo Sapiens is not the sole surviving human species", "shape": "dot", "size": 10, "title": "THP a world where Homo Sapiens is not the sole surviving human species"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THP a world where homo sapiens are not the sole surviving human species", "shape": "dot", "size": 10, "title": "THP a world where homo sapiens are not the sole surviving human species"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "THR the narrative that success is key to happiness", "shape": "dot", "size": 10, "title": "THR the narrative that success is key to happiness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 130, "label": "TH prefers to live in a world where personal success and failure are predominantly seen as a consequence of random factors rather than personal choices", "shape": "dot", "size": 10, "title": "TH prefers to live in a world where personal success and failure are predominantly seen as a consequence of random factors rather than personal choices"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "TH prefers a world where the societal norm is that you ought to respect your elders to a world without such a norm", "shape": "dot", "size": 10, "title": "TH prefers a world where the societal norm is that you ought to respect your elders to a world without such a norm"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "TH celebrates the causalty of nihilism in discourse", "shape": "dot", "size": 10, "title": "TH celebrates the causalty of nihilism in discourse"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "That we regret the decline of secular Pan-Arab nationalism", "shape": "dot", "size": 10, "title": "That we regret the decline of secular Pan-Arab nationalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "That we regret the rise of nation-states built around exclusive notions of language, race, and religion.", "shape": "dot", "size": 10, "title": "That we regret the rise of nation-states built around exclusive notions of language, race, and religion."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "THP a world without the concept of fate and destiny", "shape": "dot", "size": 10, "title": "THP a world without the concept of fate and destiny"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "THP to live in a world where personal success and failure are seen as a consequence of random factors rather than personal choice", "shape": "dot", "size": 10, "title": "THP to live in a world where personal success and failure are seen as a consequence of random factors rather than personal choice"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "THO the \"Toxic Positivity\" culture", "shape": "dot", "size": 10, "title": "THO the \"Toxic Positivity\" culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "THO the \"Toxic Positivity\" culture", "shape": "dot", "size": 10, "title": "THO the \"Toxic Positivity\" culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "THP western individualism over local collectivism", "shape": "dot", "size": 10, "title": "THP western individualism over local collectivism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 132, "label": "THS nationalism", "shape": "dot", "size": 10, "title": "THS nationalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 98, "label": "That capitalism is incompatible with racial equality", "shape": "dot", "size": 10, "title": "That capitalism is incompatible with racial equality"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 118, "label": "THR the rise of rainbow capitalism", "shape": "dot", "size": 10, "title": "THR the rise of rainbow capitalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 135, "label": "THBT capitalism is incompatible with human survival", "shape": "dot", "size": 10, "title": "THBT capitalism is incompatible with human survival"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 100, "label": "THR the narrative that in times of crisis (for example: major natural disasters, war, pandemics) frontline workers are national heroes", "shape": "dot", "size": 10, "title": "THR the narrative that in times of crisis (for example: major natural disasters, war, pandemics) frontline workers are national heroes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 103, "label": "THO the rise of billionaire philanthropy", "shape": "dot", "size": 10, "title": "THO the rise of billionaire philanthropy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 109, "label": "THR the idolization of individuals who achieved success without going through traditional education (Bill Gates, Mark Zuckerberg, etc)", "shape": "dot", "size": 10, "title": "THR the idolization of individuals who achieved success without going through traditional education (Bill Gates, Mark Zuckerberg, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THP a world where the privileged progressive youth would deliberately choose to be a \u0027Living Buddha\u0027 with their endeavors in the academe, business, and politics.", "shape": "dot", "size": 10, "title": "THP a world where the privileged progressive youth would deliberately choose to be a \u0027Living Buddha\u0027 with their endeavors in the academe, business, and politics."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THR the narrative of the \"American Dream\"", "shape": "dot", "size": 10, "title": "THR the narrative of the \"American Dream\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT humans are the central unit of moral consideration", "shape": "dot", "size": 10, "title": "THBT humans are the central unit of moral consideration"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THR the increased prominence of sport (participation in sport, consuming sporting merchandise, following sport) in the working class conscience", "shape": "dot", "size": 10, "title": "THR the increased prominence of sport (participation in sport, consuming sporting merchandise, following sport) in the working class conscience"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THP living the events of the perfect day over and over again, rather than acting differently to pursue different events", "shape": "dot", "size": 10, "title": "THP living the events of the perfect day over and over again, rather than acting differently to pursue different events"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THS the international codification of \"just post bellum\"", "shape": "dot", "size": 10, "title": "THS the international codification of \"just post bellum\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THBT \u2018allegory of the cave\u2019 is analogous to a modern \u0027western liberal democracy\u0027.", "shape": "dot", "size": 10, "title": "THBT \u2018allegory of the cave\u2019 is analogous to a modern \u0027western liberal democracy\u0027."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THR the rise of pop psychology (eg personality tests, self help books that make psychological claims)", "shape": "dot", "size": 10, "title": "THR the rise of pop psychology (eg personality tests, self help books that make psychological claims)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THR the narrative that there is no objective truth", "shape": "dot", "size": 10, "title": "THR the narrative that there is no objective truth"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "In post colonial societies (Brazil, Singapore, Congo) TH prefers a benevolent dictatorship to a fully representative democracy", "shape": "dot", "size": 10, "title": "In post colonial societies (Brazil, Singapore, Congo) TH prefers a benevolent dictatorship to a fully representative democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THBT the quest for the meaning of life is overrated", "shape": "dot", "size": 10, "title": "THBT the quest for the meaning of life is overrated"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THW recognise a culture defense", "shape": "dot", "size": 10, "title": "THW recognise a culture defense"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THR the glorification of revolutions in history textbooks", "shape": "dot", "size": 10, "title": "THR the glorification of revolutions in history textbooks"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THR the narrative of \"changing the system from within\"", "shape": "dot", "size": 10, "title": "THR the narrative of \"changing the system from within\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THR the depiction of the everyday life of people with disabilities as inspirational", "shape": "dot", "size": 10, "title": "THR the depiction of the everyday life of people with disabilities as inspirational"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THR the \"quantitative turn\" in the social sciences", "shape": "dot", "size": 10, "title": "THR the \"quantitative turn\" in the social sciences"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THS the embrace of independence oriented cultures e.g. Honjok Culture", "shape": "dot", "size": 10, "title": "THS the embrace of independence oriented cultures e.g. Honjok Culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THO the ideal that one ought sacrifice themselves for the greater good.", "shape": "dot", "size": 10, "title": "THO the ideal that one ought sacrifice themselves for the greater good."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "THR the narrative among diasporas of having continual ties to a \"motherland\"", "shape": "dot", "size": 10, "title": "THR the narrative among diasporas of having continual ties to a \"motherland\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "THR the trend in art that normalises the consumption of vices (e.g. drinking alcohol, consuming drugs, etc.) as a coping mechanism for millennials", "shape": "dot", "size": 10, "title": "THR the trend in art that normalises the consumption of vices (e.g. drinking alcohol, consuming drugs, etc.) as a coping mechanism for millennials"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THR the existence of survivorship bias", "shape": "dot", "size": 10, "title": "THR the existence of survivorship bias"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "TH celebrates the predominance of Macondism in the construction of Latin American identity", "shape": "dot", "size": 10, "title": "TH celebrates the predominance of Macondism in the construction of Latin American identity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "That we prefer a world where the internet never existed", "shape": "dot", "size": 10, "title": "That we prefer a world where the internet never existed"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THS the rise of anti-natalism", "shape": "dot", "size": 10, "title": "THS the rise of anti-natalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "THR the romanticisation of Dark Tourism", "shape": "dot", "size": 10, "title": "THR the romanticisation of Dark Tourism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "THR the glorification of immediate postcolonial leaders in Africa", "shape": "dot", "size": 10, "title": "THR the glorification of immediate postcolonial leaders in Africa"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "THO the societal narrative that forgiveness is a virtue", "shape": "dot", "size": 10, "title": "THO the societal narrative that forgiveness is a virtue"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "That it is morally wrong to use subconscious manipulation to nudge citizens towards socially desirable choices.", "shape": "dot", "size": 10, "title": "That it is morally wrong to use subconscious manipulation to nudge citizens towards socially desirable choices."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 99, "label": "THR effective altruism", "shape": "dot", "size": 10, "title": "THR effective altruism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 104, "label": "THR the rise of silicon valley culture", "shape": "dot", "size": 10, "title": "THR the rise of silicon valley culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 106, "label": "THBT people should never \"go above and beyond\" in the workplace", "shape": "dot", "size": 10, "title": "THBT people should never \"go above and beyond\" in the workplace"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 114, "label": "THW never hold referenda on measures of social lpolicy", "shape": "dot", "size": 10, "title": "THW never hold referenda on measures of social lpolicy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 117, "label": "THR the vilification of \"money mindedness\" in individuals", "shape": "dot", "size": 10, "title": "THR the vilification of \"money mindedness\" in individuals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 122, "label": "THR the societal belief that one should strongly identify with the culture of one\u0027s ancestry (e.g. if you are ethnically Chinese, identifying strongly with Chinese culture)", "shape": "dot", "size": 10, "title": "THR the societal belief that one should strongly identify with the culture of one\u0027s ancestry (e.g. if you are ethnically Chinese, identifying strongly with Chinese culture)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 123, "label": "THR the existence of high fashion", "shape": "dot", "size": 10, "title": "THR the existence of high fashion"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 124, "label": "THR the use of nostalgia (e.g. reminiscing over past/historical leaders, periods, or events) in politics", "shape": "dot", "size": 10, "title": "THR the use of nostalgia (e.g. reminiscing over past/historical leaders, periods, or events) in politics"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 125, "label": "In post-conflict societies, THW actively suppress information and interpretation, that paints any past dictator in a sympathetic light", "shape": "dot", "size": 10, "title": "In post-conflict societies, THW actively suppress information and interpretation, that paints any past dictator in a sympathetic light"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 126, "label": "THR \"self-crit\" culture.* * \u201dSelf-crit culture\u201d refers to a culture where individuals are encouraged to publicly and openly criticise themselves for their shortcomings.", "shape": "dot", "size": 10, "title": "THR \"self-crit\" culture.* * \u201dSelf-crit culture\u201d refers to a culture where individuals are encouraged to publicly and openly criticise themselves for their shortcomings."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 129, "label": "That we regret Drag Culture going mainstream", "shape": "dot", "size": 10, "title": "That we regret Drag Culture going mainstream"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 131, "label": "THP a world where the pill exists", "shape": "dot", "size": 10, "title": "THP a world where the pill exists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 134, "label": "THR the westernization of the elite in post-colonial countries (e.g. speaking predominantly in English, going to schools/universities in the West, consuming predominantly Western media)", "shape": "dot", "size": 10, "title": "THR the westernization of the elite in post-colonial countries (e.g. speaking predominantly in English, going to schools/universities in the West, consuming predominantly Western media)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 136, "label": "THR the narrative that immortality is desirable", "shape": "dot", "size": 10, "title": "THR the narrative that immortality is desirable"}]);
+                  edges = new vis.DataSet([{"from": 2, "to": 43, "width": 0.1}, {"from": 2, "to": 51, "width": 0.1}, {"from": 2, "to": 75, "width": 0.1}, {"from": 2, "to": 77, "width": 0.1}, {"from": 2, "to": 116, "width": 0.1}, {"from": 2, "to": 133, "width": 0.1}, {"from": 4, "to": 5, "width": 0.1}, {"from": 4, "to": 9, "width": 0.1}, {"from": 4, "to": 47, "width": 0.1}, {"from": 4, "to": 89, "width": 0.1}, {"from": 5, "to": 9, "width": 0.1}, {"from": 5, "to": 47, "width": 0.1}, {"from": 5, "to": 89, "width": 0.1}, {"from": 6, "to": 7, "width": 0.1}, {"from": 6, "to": 60, "width": 0.1}, {"from": 7, "to": 60, "width": 0.1}, {"from": 8, "to": 93, "width": 0.1}, {"from": 9, "to": 11, "width": 0.1}, {"from": 9, "to": 13, "width": 0.1}, {"from": 9, "to": 47, "width": 0.1}, {"from": 9, "to": 65, "width": 0.1}, {"from": 9, "to": 89, "width": 0.1}, {"from": 9, "to": 101, "width": 0.1}, {"from": 9, "to": 102, "width": 0.1}, {"from": 9, "to": 105, "width": 0.1}, {"from": 10, "to": 111, "width": 0.1}, {"from": 11, "to": 13, "width": 0.1}, {"from": 11, "to": 30, "width": 0.1}, {"from": 11, "to": 91, "width": 0.1}, {"from": 11, "to": 101, "width": 0.1}, {"from": 11, "to": 105, "width": 0.1}, {"from": 13, "to": 69, "width": 0.1}, {"from": 13, "to": 91, "width": 0.1}, {"from": 13, "to": 101, "width": 0.1}, {"from": 13, "to": 105, "width": 0.1}, {"from": 14, "to": 90, "width": 0.1}, {"from": 16, "to": 121, "width": 0.1}, {"from": 18, "to": 75, "width": 0.1}, {"from": 18, "to": 76, "width": 0.1}, {"from": 18, "to": 120, "width": 0.1}, {"from": 18, "to": 127, "width": 0.1}, {"from": 21, "to": 22, "width": 0.1}, {"from": 21, "to": 52, "width": 0.1}, {"from": 21, "to": 56, "width": 0.1}, {"from": 22, "to": 32, "width": 0.1}, {"from": 22, "to": 56, "width": 0.1}, {"from": 22, "to": 96, "width": 0.1}, {"from": 22, "to": 115, "width": 0.1}, {"from": 22, "to": 120, "width": 0.1}, {"from": 22, "to": 128, "width": 0.1}, {"from": 23, "to": 50, "width": 0.1}, {"from": 23, "to": 78, "width": 0.1}, {"from": 23, "to": 112, "width": 0.1}, {"from": 23, "to": 113, "width": 0.1}, {"from": 23, "to": 120, "width": 0.1}, {"from": 24, "to": 34, "width": 0.1}, {"from": 24, "to": 108, "width": 0.1}, {"from": 24, "to": 115, "width": 0.1}, {"from": 24, "to": 116, "width": 0.1}, {"from": 25, "to": 28, "width": 0.1}, {"from": 26, "to": 56, "width": 0.1}, {"from": 26, "to": 57, "width": 0.1}, {"from": 27, "to": 112, "width": 0.1}, {"from": 28, "to": 57, "width": 0.1}, {"from": 28, "to": 61, "width": 0.1}, {"from": 30, "to": 133, "width": 0.1}, {"from": 31, "to": 92, "width": 0.1}, {"from": 32, "to": 128, "width": 0.1}, {"from": 34, "to": 115, "width": 0.1}, {"from": 34, "to": 120, "width": 0.1}, {"from": 35, "to": 44, "width": 0.1}, {"from": 35, "to": 87, "width": 0.1}, {"from": 35, "to": 107, "width": 0.1}, {"from": 37, "to": 108, "width": 0.1}, {"from": 41, "to": 97, "width": 0.1}, {"from": 41, "to": 110, "width": 0.1}, {"from": 41, "to": 120, "width": 0.1}, {"from": 42, "to": 70, "width": 0.1}, {"from": 42, "to": 74, "width": 0.1}, {"from": 43, "to": 51, "width": 0.1}, {"from": 45, "to": 56, "width": 0.1}, {"from": 47, "to": 119, "width": 0.1}, {"from": 48, "to": 59, "width": 0.1}, {"from": 49, "to": 77, "width": 0.1}, {"from": 49, "to": 81, "width": 0.1}, {"from": 56, "to": 57, "width": 0.1}, {"from": 56, "to": 67, "width": 0.1}, {"from": 56, "to": 112, "width": 0.1}, {"from": 57, "to": 67, "width": 0.1}, {"from": 57, "to": 105, "width": 0.1}, {"from": 57, "to": 130, "width": 0.1}, {"from": 59, "to": 111, "width": 0.1}, {"from": 61, "to": 67, "width": 0.1}, {"from": 62, "to": 77, "width": 0.1}, {"from": 62, "to": 107, "width": 0.1}, {"from": 62, "to": 120, "width": 0.1}, {"from": 64, "to": 89, "width": 0.1}, {"from": 67, "to": 130, "width": 0.1}, {"from": 72, "to": 87, "width": 0.1}, {"from": 72, "to": 94, "width": 0.1}, {"from": 75, "to": 76, "width": 0.1}, {"from": 75, "to": 77, "width": 0.1}, {"from": 75, "to": 78, "width": 0.1}, {"from": 75, "to": 108, "width": 0.1}, {"from": 75, "to": 113, "width": 0.1}, {"from": 75, "to": 127, "width": 0.1}, {"from": 75, "to": 133, "width": 0.1}, {"from": 76, "to": 78, "width": 0.1}, {"from": 76, "to": 127, "width": 0.1}, {"from": 77, "to": 78, "width": 0.1}, {"from": 77, "to": 81, "width": 0.1}, {"from": 77, "to": 108, "width": 0.1}, {"from": 78, "to": 80, "width": 0.1}, {"from": 78, "to": 108, "width": 0.1}, {"from": 78, "to": 112, "width": 0.1}, {"from": 78, "to": 120, "width": 0.1}, {"from": 82, "to": 130, "width": 0.1}, {"from": 84, "to": 85, "width": 0.1}, {"from": 86, "to": 90, "width": 0.1}, {"from": 87, "to": 132, "width": 0.1}, {"from": 89, "to": 105, "width": 0.1}, {"from": 91, "to": 101, "width": 0.1}, {"from": 97, "to": 110, "width": 0.1}, {"from": 97, "to": 120, "width": 0.1}, {"from": 98, "to": 118, "width": 0.1}, {"from": 98, "to": 135, "width": 0.1}, {"from": 100, "to": 111, "width": 0.1}, {"from": 101, "to": 105, "width": 0.1}, {"from": 103, "to": 109, "width": 0.1}, {"from": 103, "to": 111, "width": 0.1}, {"from": 107, "to": 120, "width": 0.1}, {"from": 107, "to": 127, "width": 0.1}, {"from": 108, "to": 115, "width": 0.1}, {"from": 110, "to": 120, "width": 0.1}, {"from": 111, "to": 118, "width": 0.1}, {"from": 111, "to": 135, "width": 0.1}, {"from": 112, "to": 120, "width": 0.1}, {"from": 113, "to": 133, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

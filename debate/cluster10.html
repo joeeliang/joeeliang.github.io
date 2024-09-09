@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "During the process of administering the COVID-19 vaccines, THBT governments should censor information regarding the adverse side effects of the vaccines being admistered that have already been approved for safety and efficacy.", "shape": "dot", "size": 10, "title": "During the process of administering the COVID-19 vaccines, THBT governments should censor information regarding the adverse side effects of the vaccines being admistered that have already been approved for safety and efficacy."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THBT Government agencies that regulate vaccines should only test whether a vaccine is safe ,not weather it is effective before approving it for public use", "shape": "dot", "size": 10, "title": "THBT Government agencies that regulate vaccines should only test whether a vaccine is safe ,not weather it is effective before approving it for public use"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THBT government agencies that regulate vaccines should only test whether a vaccine is safe, not whether it is effective, before approving it for public use.", "shape": "dot", "size": 10, "title": "THBT government agencies that regulate vaccines should only test whether a vaccine is safe, not whether it is effective, before approving it for public use."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THS the rise of vaccine diplomacy", "shape": "dot", "size": 10, "title": "THS the rise of vaccine diplomacy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THBT it is legitimate for countries to engage in \"Vaccine Nationalism\"", "shape": "dot", "size": 10, "title": "THBT it is legitimate for countries to engage in \"Vaccine Nationalism\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THBT it is highly strategic for the Trump administration to pursue vaccine nationalism at the expense of global collaboration", "shape": "dot", "size": 10, "title": "THBT it is highly strategic for the Trump administration to pursue vaccine nationalism at the expense of global collaboration"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "When allocating COVID-19 vaccines, THW significantly deprioritise people who have failed to comply with COVID-19 regulations* *e.g.: not wearing a mask, not socially distancing, avoiding travel restrictions", "shape": "dot", "size": 10, "title": "When allocating COVID-19 vaccines, THW significantly deprioritise people who have failed to comply with COVID-19 regulations* *e.g.: not wearing a mask, not socially distancing, avoiding travel restrictions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THW deprioritize the distribution of the COVID-19 vaccines to those who contravene public health protocol (eg: spreading false rumours about COVID, refusing to wear a mask)", "shape": "dot", "size": 10, "title": "THW deprioritize the distribution of the COVID-19 vaccines to those who contravene public health protocol (eg: spreading false rumours about COVID, refusing to wear a mask)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THBT health care workers should not have the right to strike in times of a pandemic", "shape": "dot", "size": 10, "title": "THBT health care workers should not have the right to strike in times of a pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "That, assuming Personal Protective Equipment is sufficiently available, medical workers during a pandemic should have the right to opt out of service.", "shape": "dot", "size": 10, "title": "That, assuming Personal Protective Equipment is sufficiently available, medical workers during a pandemic should have the right to opt out of service."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "Assuming Personal Protective Equipment is sufficiently available, THBT medical workers during a pandemic should have the right to opt out of service.", "shape": "dot", "size": 10, "title": "Assuming Personal Protective Equipment is sufficiently available, THBT medical workers during a pandemic should have the right to opt out of service."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THR the use of war-like terminology in the combating of coronavirus", "shape": "dot", "size": 10, "title": "THR the use of war-like terminology in the combating of coronavirus"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THR the widespread use of war-like terminology by world leaders in combating the COVID-19 pandemic", "shape": "dot", "size": 10, "title": "THR the widespread use of war-like terminology by world leaders in combating the COVID-19 pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THR the widespread use of war-like terminology by world leaders in combating the COVID-19 pandemic", "shape": "dot", "size": 10, "title": "THR the widespread use of war-like terminology by world leaders in combating the COVID-19 pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "In times of pandemics, THW significantly the minimum safety and efficacy standards required for the approval of treatments and vaccines * including but not limited to measures such as: waiving medium-term and long-term safety testing, accepting drugs that do not yet show superior outcomes compared to existing treatments, allowing more severe side effects than those that are usually permitted", "shape": "dot", "size": 10, "title": "In times of pandemics, THW significantly the minimum safety and efficacy standards required for the approval of treatments and vaccines * including but not limited to measures such as: waiving medium-term and long-term safety testing, accepting drugs that do not yet show superior outcomes compared to existing treatments, allowing more severe side effects than those that are usually permitted"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THW nationalize healthcare systems and vaccine production in times of pandemics", "shape": "dot", "size": 10, "title": "THW nationalize healthcare systems and vaccine production in times of pandemics"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "Given a limitation in resources, THBT developing countries with a large population should de-prioritize mass vaccination efforts and focus on building a post-pandemic world (i.e. digitalization, enabling remote working, fixing city planning, etc)", "shape": "dot", "size": 10, "title": "Given a limitation in resources, THBT developing countries with a large population should de-prioritize mass vaccination efforts and focus on building a post-pandemic world (i.e. digitalization, enabling remote working, fixing city planning, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THS the implementation of anti-democratic measures during the times of global pandemics (e.g. lockdowns, enforced vaccinations, cancelling of elections, use of executive orders", "shape": "dot", "size": 10, "title": "THS the implementation of anti-democratic measures during the times of global pandemics (e.g. lockdowns, enforced vaccinations, cancelling of elections, use of executive orders"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THBT the response to global pandemics should be led by the World Health Organization rather than by individual governments", "shape": "dot", "size": 10, "title": "THBT the response to global pandemics should be led by the World Health Organization rather than by individual governments"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THBT the response to global pandemics should be led by the World Health Organization rather than by individual governments", "shape": "dot", "size": 10, "title": "THBT the response to global pandemics should be led by the World Health Organization rather than by individual governments"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THBT the response to global pandemics should be led by the World Health Organization rather than by individual governments", "shape": "dot", "size": 10, "title": "THBT the response to global pandemics should be led by the World Health Organization rather than by individual governments"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THS the rise of drugs (medical and recreational) as a primary option for individuals to cope with mental illnesses as opposed to prioritizing more natural remedies (e.g., consultation, wellness programs, etc.)", "shape": "dot", "size": 10, "title": "THS the rise of drugs (medical and recreational) as a primary option for individuals to cope with mental illnesses as opposed to prioritizing more natural remedies (e.g., consultation, wellness programs, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "Assuming feasibility, THBT the Philippine government should impose mandatory COVID-19 vaccination.", "shape": "dot", "size": 10, "title": "Assuming feasibility, THBT the Philippine government should impose mandatory COVID-19 vaccination."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THW implement an anti-vaccination tax on parents who refuse to vaccinate their children", "shape": "dot", "size": 10, "title": "THW implement an anti-vaccination tax on parents who refuse to vaccinate their children"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THS placing excess profit taxes on corporations which disproportinately benefit from the COVID-19 pandemic", "shape": "dot", "size": 10, "title": "THS placing excess profit taxes on corporations which disproportinately benefit from the COVID-19 pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "Once a pandemic has been declared, THW ban all reporting on the pandemic from non-governmental sources", "shape": "dot", "size": 10, "title": "Once a pandemic has been declared, THW ban all reporting on the pandemic from non-governmental sources"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THBT Citizens should be granted the authority to determine how covid 19 stimulus packages are directed", "shape": "dot", "size": 10, "title": "THBT Citizens should be granted the authority to determine how covid 19 stimulus packages are directed"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "In a post Covid society, THP the continuation of online classes over face-to-face classes", "shape": "dot", "size": 10, "title": "In a post Covid society, THP the continuation of online classes over face-to-face classes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "TH, as the Indian BJP Government in 1st week of March 2020, will strictly ban the celebration of Holi in India in the wake of COVID19 concerns", "shape": "dot", "size": 10, "title": "TH, as the Indian BJP Government in 1st week of March 2020, will strictly ban the celebration of Holi in India in the wake of COVID19 concerns"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THP a world where COVID-19 is seen as the new normal rather than one where it is seen as an extraordinary situation.", "shape": "dot", "size": 10, "title": "THP a world where COVID-19 is seen as the new normal rather than one where it is seen as an extraordinary situation."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "TH, as a state, will take a utilitarian approach when making policies to deal with a pandemic.", "shape": "dot", "size": 10, "title": "TH, as a state, will take a utilitarian approach when making policies to deal with a pandemic."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "This House, as Joe Biden upon the availability of a vaccine to coronavirus-19, we would use strong coercive measures to induce participation (e.g. reducing welfare payments for those that don\u0027t comply or not allowing unvaccinated children to attend school).", "shape": "dot", "size": 10, "title": "This House, as Joe Biden upon the availability of a vaccine to coronavirus-19, we would use strong coercive measures to induce participation (e.g. reducing welfare payments for those that don\u0027t comply or not allowing unvaccinated children to attend school)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "In a country with a National Healthcare plan, THW ban private healthcare", "shape": "dot", "size": 10, "title": "In a country with a National Healthcare plan, THW ban private healthcare"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "TH celebrates the decline of nation\u0027s economic interdependency in the face of the Coronavirus pandemic", "shape": "dot", "size": 10, "title": "TH celebrates the decline of nation\u0027s economic interdependency in the face of the Coronavirus pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THW refrain from using alarmist messaging during pandemics (e.g. dramatic death rate predictions), and instead adopt optimistic messaging aimed at improving morale (e.g. celebrating recovery rates, showcasing regular activities done with COVID protection measures etc)", "shape": "dot", "size": 10, "title": "THW refrain from using alarmist messaging during pandemics (e.g. dramatic death rate predictions), and instead adopt optimistic messaging aimed at improving morale (e.g. celebrating recovery rates, showcasing regular activities done with COVID protection measures etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THBT countries with widespread poverty should not pursue lockdown as a key COVID strategy", "shape": "dot", "size": 10, "title": "THBT countries with widespread poverty should not pursue lockdown as a key COVID strategy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THBT Planned Parenthood should heavily prioritise providing health care services at the expense of political advocacy", "shape": "dot", "size": 10, "title": "THBT Planned Parenthood should heavily prioritise providing health care services at the expense of political advocacy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "In retrospect, This House Believes That Indonesia should have implemented a full-scale lockdown instead of large-scale social restrictions (PSBB) as a response to the COVID-19", "shape": "dot", "size": 10, "title": "In retrospect, This House Believes That Indonesia should have implemented a full-scale lockdown instead of large-scale social restrictions (PSBB) as a response to the COVID-19"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THW grant the WHO, in times of crisis, coercive powers to gather information about suspected infectious disease outbreaks and to enforce its policy recommendations", "shape": "dot", "size": 10, "title": "THW grant the WHO, in times of crisis, coercive powers to gather information about suspected infectious disease outbreaks and to enforce its policy recommendations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "In democracies, THBT opposition figures should emphasize cooperation with, rather than criticism of, strongman heads of state (e.g. Trump, Duterte, Bolsonaro, Widodo) for the duration of the COVID 19 pandemic", "shape": "dot", "size": 10, "title": "In democracies, THBT opposition figures should emphasize cooperation with, rather than criticism of, strongman heads of state (e.g. Trump, Duterte, Bolsonaro, Widodo) for the duration of the COVID 19 pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THW invite your ex-partner to live with you during quarantine", "shape": "dot", "size": 10, "title": "THW invite your ex-partner to live with you during quarantine"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THR the shaming of ghosting during COVID-19 pandemic", "shape": "dot", "size": 10, "title": "THR the shaming of ghosting during COVID-19 pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "That in times of a global pandemic, standard research ethics should be suspended as long as the subject consents.", "shape": "dot", "size": 10, "title": "That in times of a global pandemic, standard research ethics should be suspended as long as the subject consents."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THBT countries should suspend all elections in times of severe health crises", "shape": "dot", "size": 10, "title": "THBT countries should suspend all elections in times of severe health crises"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THO the use of \"desperation science\" during the coronavirus pandemic", "shape": "dot", "size": 10, "title": "THO the use of \"desperation science\" during the coronavirus pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "That the state\u0027s failure to address a pandemic should be considered as a crime against humanity.", "shape": "dot", "size": 10, "title": "That the state\u0027s failure to address a pandemic should be considered as a crime against humanity."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THR the Heroisation of Covid-19 Frontliners.", "shape": "dot", "size": 10, "title": "THR the Heroisation of Covid-19 Frontliners."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "In countries with a lack of medical professionals, TH, rather than regulate who can be a healthcare professional, would provide optional certifications of competence", "shape": "dot", "size": 10, "title": "In countries with a lack of medical professionals, TH, rather than regulate who can be a healthcare professional, would provide optional certifications of competence"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THW incentivize work from home (*not only for the duration of the pandemic)", "shape": "dot", "size": 10, "title": "THW incentivize work from home (*not only for the duration of the pandemic)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "TH, as the CCP, would publicly acknowledge their errors in their managing of COVID-19 \u0026 the creation of a pandemic, and agree to reasonable measures of assistance \u0026 compensation to the global community.", "shape": "dot", "size": 10, "title": "TH, as the CCP, would publicly acknowledge their errors in their managing of COVID-19 \u0026 the creation of a pandemic, and agree to reasonable measures of assistance \u0026 compensation to the global community."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "Post the Covid-19 outbreak is contained, TH(the Bundesliga)W scrap the 50+1 rule.", "shape": "dot", "size": 10, "title": "Post the Covid-19 outbreak is contained, TH(the Bundesliga)W scrap the 50+1 rule."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THBT philanthropic figures focussed on COVID-19 should focus on prevention (eg distributing PPE) to possible cures/vaccines", "shape": "dot", "size": 10, "title": "THBT philanthropic figures focussed on COVID-19 should focus on prevention (eg distributing PPE) to possible cures/vaccines"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "That individuals who breach COVID-19 lockdown requirements while unknowingly infectious should be liable for manslaughter for any resulting deaths", "shape": "dot", "size": 10, "title": "That individuals who breach COVID-19 lockdown requirements while unknowingly infectious should be liable for manslaughter for any resulting deaths"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "That the United States should immediately abolish private health insurance and establish Medicare for all", "shape": "dot", "size": 10, "title": "That the United States should immediately abolish private health insurance and establish Medicare for all"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "This House Believes That all countries should implement legislation similar to the US Defense Production Act to combat the Covid-19 pandemic", "shape": "dot", "size": 10, "title": "This House Believes That all countries should implement legislation similar to the US Defense Production Act to combat the Covid-19 pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "That we would bail out airlines failing due to COVID-19", "shape": "dot", "size": 10, "title": "That we would bail out airlines failing due to COVID-19"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "That we would disestablish the World Health Organisation (WHO).", "shape": "dot", "size": 10, "title": "That we would disestablish the World Health Organisation (WHO)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THBT stock markets should freeze the sale of publicly-exchanged stocks on the secondary market during pandemics", "shape": "dot", "size": 10, "title": "THBT stock markets should freeze the sale of publicly-exchanged stocks on the secondary market during pandemics"}]);
+                  edges = new vis.DataSet([{"from": 1, "to": 10, "width": 0.1}, {"from": 1, "to": 26, "width": 0.1}, {"from": 4, "to": 5, "width": 0.1}, {"from": 4, "to": 32, "width": 0.1}, {"from": 5, "to": 32, "width": 0.1}, {"from": 6, "to": 35, "width": 0.1}, {"from": 10, "to": 26, "width": 0.1}, {"from": 18, "to": 33, "width": 0.1}, {"from": 18, "to": 49, "width": 0.1}, {"from": 19, "to": 52, "width": 0.1}, {"from": 19, "to": 54, "width": 0.1}, {"from": 21, "to": 36, "width": 0.1}, {"from": 22, "to": 36, "width": 0.1}, {"from": 29, "to": 44, "width": 0.1}, {"from": 29, "to": 45, "width": 0.1}, {"from": 29, "to": 46, "width": 0.1}, {"from": 33, "to": 49, "width": 0.1}, {"from": 36, "to": 44, "width": 0.1}, {"from": 36, "to": 45, "width": 0.1}, {"from": 36, "to": 46, "width": 0.1}, {"from": 44, "to": 45, "width": 0.1}, {"from": 44, "to": 46, "width": 0.1}, {"from": 45, "to": 46, "width": 0.1}, {"from": 52, "to": 54, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+    <channel>
+      <title>Joe Liang</title>
+      <link>https://joeliang.org/public</link>
+      <description>Last 10 notes on Joe Liang</description>
+      <generator>Quartz -- quartz.jzhao.xyz</generator>
+      <item>
+    <title>Waves</title>
+    <link>https://joeliang.org/public/Waves</link>
+    <guid>https://joeliang.org/public/Waves</guid>
+    <description>Wave model Standing Waves Light Physics.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Work, Energy, Power</title>
+    <link>https://joeliang.org/public/Work,-Energy,-Power</link>
+    <guid>https://joeliang.org/public/Work,-Energy,-Power</guid>
+    <description>Work: W = Fs\cos(\theta) Energy is the ability to do work. Unit in J, Joules. Kinetic: E_{k} = \frac{1}{2}mv^{2} Potential: E_{p} = mgh Spring: E_{E} = \frac{1}{2}kx^{2} Note: \theta is for acting on a body at an angle.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Standing Waves</title>
+    <link>https://joeliang.org/public/Standing-Waves</link>
+    <guid>https://joeliang.org/public/Standing-Waves</guid>
+    <description>On strings, this is actually a LONGITUDINAL WAVE! Which is what allows it to be at so many frequencies. The one you visualize is transverse waves! In tubes, open ends are anti nodes since the air molecules can move parallel to the direction of the wave.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Thermal Physics</title>
+    <link>https://joeliang.org/public/Thermal-Physics</link>
+    <guid>https://joeliang.org/public/Thermal-Physics</guid>
+    <description>Heat in Relation to Physics Black Body Radiation.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Wave model</title>
+    <link>https://joeliang.org/public/Wave-model</link>
+    <guid>https://joeliang.org/public/Wave-model</guid>
+    <description>...</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Physics HL</title>
+    <link>https://joeliang.org/public/Physics-HL</link>
+    <guid>https://joeliang.org/public/Physics-HL</guid>
+    <description>Mechanics Physics Thermal Physics Waves.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Proof of One Dimensional Collision</title>
+    <link>https://joeliang.org/public/Proof-of-One-Dimensional-Collision</link>
+    <guid>https://joeliang.org/public/Proof-of-One-Dimensional-Collision</guid>
+    <description>Start with momentum m_{1}v_{1} + m_{2}v_{2} = m_{1}v_{1}^{&#039;} + m_{2}v_{2}^{&#039;} Do the same for kinetic energy \frac{1}{2}m_{1}v_{1}^2 + \frac{1}{2}m_{2}v_{2}^2 ...</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Light Physics</title>
+    <link>https://joeliang.org/public/Light-Physics</link>
+    <guid>https://joeliang.org/public/Light-Physics</guid>
+    <description>Light is a transverse wave that is perpendicular to the direction of travel. Light will reflect and refract at a change in medium as other waves due to a change in velocity.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Mechanics Physics</title>
+    <link>https://joeliang.org/public/Mechanics-Physics</link>
+    <guid>https://joeliang.org/public/Mechanics-Physics</guid>
+    <description>Kinematics Dynamics Momentum Physics Work, Energy, Power.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item><item>
+    <title>Momentum Physics</title>
+    <link>https://joeliang.org/public/Momentum-Physics</link>
+    <guid>https://joeliang.org/public/Momentum-Physics</guid>
+    <description>Momentum, p = mv . Newton’s second law can be written as: \sum F = \frac{\Delta p}{\Delta t} Momentum is conserved in all isolated, closed systems. Elastic collisions are when kinetic energy is conserved.</description>
+    <pubDate>Mon, 02 Sep 2024 08:04:11 GMT</pubDate>
+  </item>
+    </channel>
+  </rss>

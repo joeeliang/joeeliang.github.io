@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THBT social media companies should refuse to censor the self broadcast of political suicides", "shape": "dot", "size": 10, "title": "THBT social media companies should refuse to censor the self broadcast of political suicides"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THW not allow news media outlets to report on suicide", "shape": "dot", "size": 10, "title": "THW not allow news media outlets to report on suicide"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "That social media companies should aggressively censor offensive and discriminatory content.", "shape": "dot", "size": 10, "title": "That social media companies should aggressively censor offensive and discriminatory content."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "TH believes that social media sites should censor the statements of individuals that aim to diminish the threat and reality of COVID-19. (I.e. conspiracy theories on if it actually exists, incorrect statements on masks not working)", "shape": "dot", "size": 10, "title": "TH believes that social media sites should censor the statements of individuals that aim to diminish the threat and reality of COVID-19. (I.e. conspiracy theories on if it actually exists, incorrect statements on masks not working)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THR the growing involvement of politicians in social media", "shape": "dot", "size": 10, "title": "THR the growing involvement of politicians in social media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "THBT social media has done more harm than good for democracy", "shape": "dot", "size": 10, "title": "THBT social media has done more harm than good for democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THW hold social media platforms liable for illegal content that is posted (fake news, defamation, etc.)", "shape": "dot", "size": 10, "title": "THW hold social media platforms liable for illegal content that is posted (fake news, defamation, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THBT the creation of social media platforms has done more harm than good", "shape": "dot", "size": 10, "title": "THBT the creation of social media platforms has done more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "THBT prominent social media platforms (e.g Twitter, Facebook, Weibo) should not allow politicians or political parties to make public accounts", "shape": "dot", "size": 10, "title": "THBT prominent social media platforms (e.g Twitter, Facebook, Weibo) should not allow politicians or political parties to make public accounts"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THW hold social media companies liable for the spread of fake news", "shape": "dot", "size": 10, "title": "THW hold social media companies liable for the spread of fake news"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "THBT social media platforms should aggressively remove unverified information", "shape": "dot", "size": 10, "title": "THBT social media platforms should aggressively remove unverified information"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THBT Facebook has done more harm than good", "shape": "dot", "size": 10, "title": "THBT Facebook has done more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "As the feminist movement, THR the cancellation of sexual predators on social media", "shape": "dot", "size": 10, "title": "As the feminist movement, THR the cancellation of sexual predators on social media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THR the increased popularity of sex work based social media i.e. OnlyFans, JustForFans, etc", "shape": "dot", "size": 10, "title": "THR the increased popularity of sex work based social media i.e. OnlyFans, JustForFans, etc"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THR the rise of OnlyFans in the pornography market", "shape": "dot", "size": 10, "title": "THR the rise of OnlyFans in the pornography market"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THR the growing prevalence of poverty porn", "shape": "dot", "size": 10, "title": "THR the growing prevalence of poverty porn"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THS the rise of adult entertainment content subscription service platforms (e.g. OnlyFans)", "shape": "dot", "size": 10, "title": "THS the rise of adult entertainment content subscription service platforms (e.g. OnlyFans)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THW ban all forms of pornography", "shape": "dot", "size": 10, "title": "THW ban all forms of pornography"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THW legally require adtech giants (e,g Facebook, Google) to pay traditional media organisations for sharing or displaying their news content", "shape": "dot", "size": 10, "title": "THW legally require adtech giants (e,g Facebook, Google) to pay traditional media organisations for sharing or displaying their news content"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THW require by law for Google and Facebook to pay traditional news media to publish their material", "shape": "dot", "size": 10, "title": "THW require by law for Google and Facebook to pay traditional news media to publish their material"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THBT, in liberal democracies, governments should have a veto power on the privacy policies of social media companies", "shape": "dot", "size": 10, "title": "THBT, in liberal democracies, governments should have a veto power on the privacy policies of social media companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "That we should regulate social media entities as publishers/news organisations", "shape": "dot", "size": 10, "title": "That we should regulate social media entities as publishers/news organisations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THBT the age of digital information (e.g. social media, online news, etc.) has done more harm than good in protecting democracy", "shape": "dot", "size": 10, "title": "THBT the age of digital information (e.g. social media, online news, etc.) has done more harm than good in protecting democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "That Tumblr should unban pornography", "shape": "dot", "size": 10, "title": "That Tumblr should unban pornography"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "That we prefer a world where social media networking sites are only available on a paid subscription basis.", "shape": "dot", "size": 10, "title": "That we prefer a world where social media networking sites are only available on a paid subscription basis."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THW compel all social media companies to offer multi-tiered paid subscription services instead of free for all access.", "shape": "dot", "size": 10, "title": "THW compel all social media companies to offer multi-tiered paid subscription services instead of free for all access."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THP a world in which social media platforms use paid subscriptions rather than collect and monetize users\u0027 data", "shape": "dot", "size": 10, "title": "THP a world in which social media platforms use paid subscriptions rather than collect and monetize users\u0027 data"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THP a world in which social media platforms use paid subscriptions rather than collect and monetize users\u0027 data", "shape": "dot", "size": 10, "title": "THP a world in which social media platforms use paid subscriptions rather than collect and monetize users\u0027 data"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "THBT art and media should not be subject to any forms of censorship", "shape": "dot", "size": 10, "title": "THBT art and media should not be subject to any forms of censorship"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "TH (the journalist) will reveal this information to the public", "shape": "dot", "size": 10, "title": "TH (the journalist) will reveal this information to the public"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THW NOT publish this information", "shape": "dot", "size": 10, "title": "THW NOT publish this information"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THW ban the development and public access to memorial bots", "shape": "dot", "size": 10, "title": "THW ban the development and public access to memorial bots"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THR the use of predictive algorithms in online media service platforms (e.g. Netflix, Spotify, Youtube)", "shape": "dot", "size": 10, "title": "THR the use of predictive algorithms in online media service platforms (e.g. Netflix, Spotify, Youtube)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THS the rise of virtual influencers", "shape": "dot", "size": 10, "title": "THS the rise of virtual influencers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THBT the Philippine media should refrain from live reporting on Duterte", "shape": "dot", "size": 10, "title": "THBT the Philippine media should refrain from live reporting on Duterte"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THBT it is legitimate for a Filipino to be employed in the Online Troll industry", "shape": "dot", "size": 10, "title": "THBT it is legitimate for a Filipino to be employed in the Online Troll industry"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THW break up Facebook Inc", "shape": "dot", "size": 10, "title": "THW break up Facebook Inc"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "TH supports the rise of academic piracy sites. (E.g. Sci-Hub, Lib-Gen, Academic Torrents)", "shape": "dot", "size": 10, "title": "TH supports the rise of academic piracy sites. (E.g. Sci-Hub, Lib-Gen, Academic Torrents)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THS the idea of content on OTT platforms being regulated", "shape": "dot", "size": 10, "title": "THS the idea of content on OTT platforms being regulated"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "This House would mandate that social media users select middleware packages to curate the information they see on their social media accounts.", "shape": "dot", "size": 10, "title": "This House would mandate that social media users select middleware packages to curate the information they see on their social media accounts."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "TH, as liberal media companies, would not interview public figures who espouse regressive views/opinions", "shape": "dot", "size": 10, "title": "TH, as liberal media companies, would not interview public figures who espouse regressive views/opinions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THBT The media should not be involved in voting for sporting awards", "shape": "dot", "size": 10, "title": "THBT The media should not be involved in voting for sporting awards"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THBT social media companies should use algorithms to push individuals away from pseudoscientific beliefs and practices (i.e. Tarot Readings, Astrology and Horoscope, Wicca, Fortune Telling, etc.)", "shape": "dot", "size": 10, "title": "THBT social media companies should use algorithms to push individuals away from pseudoscientific beliefs and practices (i.e. Tarot Readings, Astrology and Horoscope, Wicca, Fortune Telling, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THBT entertainment platforms (e.g. Spotify, Netflix) should remove all works from artists that have committed immoral or criminal acts in their personal lives.", "shape": "dot", "size": 10, "title": "THBT entertainment platforms (e.g. Spotify, Netflix) should remove all works from artists that have committed immoral or criminal acts in their personal lives."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THBT up and coming POC chefs should join Bon Appetit rather than set up their own food videos on social media", "shape": "dot", "size": 10, "title": "THBT up and coming POC chefs should join Bon Appetit rather than set up their own food videos on social media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THBT social media companies (Facebook, WhatsApp, Snapchat, Instagram, etc) should hand over user\u0027s private data to authorities upon court order", "shape": "dot", "size": 10, "title": "THBT social media companies (Facebook, WhatsApp, Snapchat, Instagram, etc) should hand over user\u0027s private data to authorities upon court order"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "That we would prefer Vtubing to become the norm of streaming", "shape": "dot", "size": 10, "title": "That we would prefer Vtubing to become the norm of streaming"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THR the dominant narrative that media holds political figures accountable", "shape": "dot", "size": 10, "title": "THR the dominant narrative that media holds political figures accountable"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THS the usage of women sexuality to gain profit (i.e: Twitch girl streamers, \"premium\" Snapchat, Patreon girl, Onlyfans)", "shape": "dot", "size": 10, "title": "THS the usage of women sexuality to gain profit (i.e: Twitch girl streamers, \"premium\" Snapchat, Patreon girl, Onlyfans)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THR streaming culture (for example: Netflix, Iflix, Viu, Joox, Spotify)", "shape": "dot", "size": 10, "title": "THR streaming culture (for example: Netflix, Iflix, Viu, Joox, Spotify)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THP a world where virtual immorality technology exists", "shape": "dot", "size": 10, "title": "THP a world where virtual immorality technology exists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THS the use of extra-legal and illegal methods to provide wider access to knowledge (e.g. sci-hub, hacking Jstor, unathorised distribution of files and copies)", "shape": "dot", "size": 10, "title": "THS the use of extra-legal and illegal methods to provide wider access to knowledge (e.g. sci-hub, hacking Jstor, unathorised distribution of files and copies)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "THBT major k-pop bands should be held accountable for the toxic online behavior of members of their fandom (for example, BTS and their Army)", "shape": "dot", "size": 10, "title": "THBT major k-pop bands should be held accountable for the toxic online behavior of members of their fandom (for example, BTS and their Army)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THR the growing presence of A-list celebrities on media platforms originally meant for smaller creators (i.e. John Krasinski, Will Smith and Brie Larson on Youtube; Bella Thorne on Onlyfans; Jason Derulo on Tiktok; etc.)", "shape": "dot", "size": 10, "title": "THR the growing presence of A-list celebrities on media platforms originally meant for smaller creators (i.e. John Krasinski, Will Smith and Brie Larson on Youtube; Bella Thorne on Onlyfans; Jason Derulo on Tiktok; etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THS the complete demetrication of all social media", "shape": "dot", "size": 10, "title": "THS the complete demetrication of all social media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "That we prefer Facebook\u0027s policy of only removing content that users report as compared to a policy where Facebook itself independently determines restrictions on content.", "shape": "dot", "size": 10, "title": "That we prefer Facebook\u0027s policy of only removing content that users report as compared to a policy where Facebook itself independently determines restrictions on content."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "TH supports a ban on Chinese-owned social media apps (e.g. TikTok, WeChat)", "shape": "dot", "size": 10, "title": "TH supports a ban on Chinese-owned social media apps (e.g. TikTok, WeChat)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "This House Believes That pro-democratic activists should use fake news and synthetic media (e.g. \"deepfake\", fake video or audio recordings) to advance their cause.", "shape": "dot", "size": 10, "title": "This House Believes That pro-democratic activists should use fake news and synthetic media (e.g. \"deepfake\", fake video or audio recordings) to advance their cause."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THR the prominence of creator-driven content", "shape": "dot", "size": 10, "title": "THR the prominence of creator-driven content"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THBT international media organisations should only use local reporters to cover foreign stories and events", "shape": "dot", "size": 10, "title": "THBT international media organisations should only use local reporters to cover foreign stories and events"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THW consider \"public interest\" as a mitigating factor for investigative journalists prosecuted for committing crimes (e.g. breaking and entering, breaching privacy etc) in the course of an investigation", "shape": "dot", "size": 10, "title": "THW consider \"public interest\" as a mitigating factor for investigative journalists prosecuted for committing crimes (e.g. breaking and entering, breaching privacy etc) in the course of an investigation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THR twitter adding a fact-check function", "shape": "dot", "size": 10, "title": "THR twitter adding a fact-check function"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "TH, as a feminist hacker, would seek to disrupt tradwife spaces (for example, by methods such as DDos, phishing, defacement)", "shape": "dot", "size": 10, "title": "TH, as a feminist hacker, would seek to disrupt tradwife spaces (for example, by methods such as DDos, phishing, defacement)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THBT twitter should require individuals to use accounts uner their own name", "shape": "dot", "size": 10, "title": "THBT twitter should require individuals to use accounts uner their own name"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "This House Opposes Twitch\u0027s decision to ban sexually suggestive content on their platform", "shape": "dot", "size": 10, "title": "This House Opposes Twitch\u0027s decision to ban sexually suggestive content on their platform"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THP a world where competitive debating tournaments are always and exclusively hosted online as opposed to always and exclusively in person", "shape": "dot", "size": 10, "title": "THP a world where competitive debating tournaments are always and exclusively hosted online as opposed to always and exclusively in person"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "That we should make search engines liable for defamation when their algorithms promote defamatory content", "shape": "dot", "size": 10, "title": "That we should make search engines liable for defamation when their algorithms promote defamatory content"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "That no media platform should receive public funding", "shape": "dot", "size": 10, "title": "That no media platform should receive public funding"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "In liberal democracies, THW ban the media from reporting on ongoing sex offence trials", "shape": "dot", "size": 10, "title": "In liberal democracies, THW ban the media from reporting on ongoing sex offence trials"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THW ban 24 Hour News Media", "shape": "dot", "size": 10, "title": "THW ban 24 Hour News Media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "THS the rise of disclosure culture", "shape": "dot", "size": 10, "title": "THS the rise of disclosure culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "This House Supports Twitter as a primary means of political communication", "shape": "dot", "size": 10, "title": "This House Supports Twitter as a primary means of political communication"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THW only allow the media and campagning organisations to depict or publish information about the deceased in a tragedy with the explicit permission of the family", "shape": "dot", "size": 10, "title": "THW only allow the media and campagning organisations to depict or publish information about the deceased in a tragedy with the explicit permission of the family"}]);
+                  edges = new vis.DataSet([{"from": 1, "to": 40, "width": 0.1}, {"from": 1, "to": 45, "width": 0.1}, {"from": 8, "to": 45, "width": 0.1}, {"from": 10, "to": 34, "width": 0.1}, {"from": 13, "to": 18, "width": 0.1}, {"from": 13, "to": 45, "width": 0.1}, {"from": 13, "to": 47, "width": 0.1}, {"from": 13, "to": 66, "width": 0.1}, {"from": 13, "to": 67, "width": 0.1}, {"from": 18, "to": 34, "width": 0.1}, {"from": 18, "to": 69, "width": 0.1}, {"from": 19, "to": 29, "width": 0.1}, {"from": 21, "to": 27, "width": 0.1}, {"from": 21, "to": 29, "width": 0.1}, {"from": 21, "to": 42, "width": 0.1}, {"from": 21, "to": 53, "width": 0.1}, {"from": 22, "to": 30, "width": 0.1}, {"from": 29, "to": 42, "width": 0.1}, {"from": 31, "to": 34, "width": 0.1}, {"from": 31, "to": 47, "width": 0.1}, {"from": 31, "to": 60, "width": 0.1}, {"from": 34, "to": 39, "width": 0.1}, {"from": 34, "to": 69, "width": 0.1}, {"from": 38, "to": 53, "width": 0.1}, {"from": 45, "to": 60, "width": 0.1}, {"from": 45, "to": 67, "width": 0.1}, {"from": 46, "to": 50, "width": 0.1}, {"from": 46, "to": 64, "width": 0.1}, {"from": 46, "to": 65, "width": 0.1}, {"from": 50, "to": 64, "width": 0.1}, {"from": 50, "to": 65, "width": 0.1}, {"from": 53, "to": 72, "width": 0.1}, {"from": 56, "to": 68, "width": 0.1}, {"from": 64, "to": 65, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

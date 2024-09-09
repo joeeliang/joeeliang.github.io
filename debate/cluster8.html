@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "TH, as history teachers from minority backgrounds, would prioritize teaching history in primary and secondary schools with an emphasis on socio-political commentary, even at the expense of memorization of historical facts", "shape": "dot", "size": 10, "title": "TH, as history teachers from minority backgrounds, would prioritize teaching history in primary and secondary schools with an emphasis on socio-political commentary, even at the expense of memorization of historical facts"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THBT schools should teach history as a product of social and institutional factors, rather than the product of grand figures", "shape": "dot", "size": 10, "title": "THBT schools should teach history as a product of social and institutional factors, rather than the product of grand figures"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THBT history curricula should be structured around the lives of ordinary individuals, as opposed to leaders/icons/politicians/the elite.", "shape": "dot", "size": 10, "title": "THBT history curricula should be structured around the lives of ordinary individuals, as opposed to leaders/icons/politicians/the elite."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "This House Prefers a world where curriculum emphasize on globally integrated history over regional history.", "shape": "dot", "size": 10, "title": "This House Prefers a world where curriculum emphasize on globally integrated history over regional history."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT an Academic Freeze in state universities will do more harm than good to students", "shape": "dot", "size": 10, "title": "THBT an Academic Freeze in state universities will do more harm than good to students"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THBT an Academic Freeze in state universities will do more harm than good to students", "shape": "dot", "size": 10, "title": "THBT an Academic Freeze in state universities will do more harm than good to students"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THBT young Filipino scientists working abroad should not join the program", "shape": "dot", "size": 10, "title": "THBT young Filipino scientists working abroad should not join the program"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THBT young Filipino scientists working abroad should not join the program", "shape": "dot", "size": 10, "title": "THBT young Filipino scientists working abroad should not join the program"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THW require university students from developing countries who obtained education in the West to work in their country of origin for a number of years after graduation.", "shape": "dot", "size": 10, "title": "THW require university students from developing countries who obtained education in the West to work in their country of origin for a number of years after graduation."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "THBT governments of developing countries should aggressively disincentivize students from pursuing further education overseas", "shape": "dot", "size": 10, "title": "THBT governments of developing countries should aggressively disincentivize students from pursuing further education overseas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THBT humanities and social science faculties should prioritize the hiring of conservative academics.", "shape": "dot", "size": 10, "title": "THBT humanities and social science faculties should prioritize the hiring of conservative academics."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THBT universities should prioritize teaching expertise over research expertise when hiring and promoting faculty members", "shape": "dot", "size": 10, "title": "THBT universities should prioritize teaching expertise over research expertise when hiring and promoting faculty members"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "This House regrets the politicisation of student unions in the developing world.", "shape": "dot", "size": 10, "title": "This House regrets the politicisation of student unions in the developing world."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "That Student Unions should not take political positions that do not directly pertain to tertiary education.", "shape": "dot", "size": 10, "title": "That Student Unions should not take political positions that do not directly pertain to tertiary education."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "As a talented graduate of a prestigious university, that wants to make the world a better place, TH would choose to pursue a career in the business and corporate world, rather than in a humanitarian organisation or in the government.", "shape": "dot", "size": 10, "title": "As a talented graduate of a prestigious university, that wants to make the world a better place, TH would choose to pursue a career in the business and corporate world, rather than in a humanitarian organisation or in the government."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "TH, as an altruistically minded graduate, would follow the 80,000 hours approach to their professional career rather than joining an altruistic organisation", "shape": "dot", "size": 10, "title": "TH, as an altruistically minded graduate, would follow the 80,000 hours approach to their professional career rather than joining an altruistic organisation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THW dissolve the NCAA and allow all schools to independently set student athlete guidelines", "shape": "dot", "size": 10, "title": "THW dissolve the NCAA and allow all schools to independently set student athlete guidelines"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "TH, as an educational institution, would prohibit all sports programs that pose a risk of CTE.", "shape": "dot", "size": 10, "title": "TH, as an educational institution, would prohibit all sports programs that pose a risk of CTE."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THW abolish all merit based K-12 schools", "shape": "dot", "size": 10, "title": "THW abolish all merit based K-12 schools"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THBT, in low-income communities, governments should prioritise free access to univeristy over higher standards of primary/secondary school education", "shape": "dot", "size": 10, "title": "THBT, in low-income communities, governments should prioritise free access to univeristy over higher standards of primary/secondary school education"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THW abolish all private schools at the primary and secondary level", "shape": "dot", "size": 10, "title": "THW abolish all private schools at the primary and secondary level"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THW legalise and actively incentivise the use of university bonds", "shape": "dot", "size": 10, "title": "THW legalise and actively incentivise the use of university bonds"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "TH, as a recently graduated high school student, would take up a bonded government scholarship", "shape": "dot", "size": 10, "title": "TH, as a recently graduated high school student, would take up a bonded government scholarship"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THBT in states with high unemployment, the government should choose to make education for STEM fields free, at the cost of increasing the cost of tuition in the humanities", "shape": "dot", "size": 10, "title": "THBT in states with high unemployment, the government should choose to make education for STEM fields free, at the cost of increasing the cost of tuition in the humanities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "THBT governments should aggressively subsidise online liberal arts courses for university students", "shape": "dot", "size": 10, "title": "THBT governments should aggressively subsidise online liberal arts courses for university students"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THBT governments in developing countries should prioritize increasing foreign tie-ups in public universities, over allowing the entry of foreign universities", "shape": "dot", "size": 10, "title": "THBT governments in developing countries should prioritize increasing foreign tie-ups in public universities, over allowing the entry of foreign universities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THBT in areas of socio-economic deprivation, schools should train students in vocational skills to the exclusion of the liberal arts", "shape": "dot", "size": 10, "title": "THBT in areas of socio-economic deprivation, schools should train students in vocational skills to the exclusion of the liberal arts"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "In developing states, THW highly incentivize students to pursue vocational school", "shape": "dot", "size": 10, "title": "In developing states, THW highly incentivize students to pursue vocational school"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "Given the opportunity, TH, as a talented young individual living in a Western Balkan country, would emigrate to pursue a career in the EU", "shape": "dot", "size": 10, "title": "Given the opportunity, TH, as a talented young individual living in a Western Balkan country, would emigrate to pursue a career in the EU"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "Given the opportunity, TH, as a talented young individual living in a Western Balkan country, would emigrate to pursue a career in the EU", "shape": "dot", "size": 10, "title": "Given the opportunity, TH, as a talented young individual living in a Western Balkan country, would emigrate to pursue a career in the EU"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "That we would proportionately subsidise (e.g. scholarship and funding) university courses according to the employability of their graduates.", "shape": "dot", "size": 10, "title": "That we would proportionately subsidise (e.g. scholarship and funding) university courses according to the employability of their graduates."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "That we support a permanent move to online tertiary education.", "shape": "dot", "size": 10, "title": "That we support a permanent move to online tertiary education."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "This House Believes That universities should continue with primarily online education post COVID-19", "shape": "dot", "size": 10, "title": "This House Believes That universities should continue with primarily online education post COVID-19"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THBT Japan should heavily regulate the curriculum of \u0027Joseon Schools\u0027", "shape": "dot", "size": 10, "title": "THBT Japan should heavily regulate the curriculum of \u0027Joseon Schools\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THR the Rise of Micro-credentialism", "shape": "dot", "size": 10, "title": "THR the Rise of Micro-credentialism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THP a world in which the Sorting Hat is used to determine where individuals attend University (Infoslide: The Sorting Hat is a sentient hat that magically determines where students belong academically, by judging each student\u0027s qualities and personality traits, thus placing them in the most appropriate house that upholds those qualities. On VERY rare occasions it has been known for a student to talk with the hat and influence where it decides to place them in.)", "shape": "dot", "size": 10, "title": "THP a world in which the Sorting Hat is used to determine where individuals attend University (Infoslide: The Sorting Hat is a sentient hat that magically determines where students belong academically, by judging each student\u0027s qualities and personality traits, thus placing them in the most appropriate house that upholds those qualities. On VERY rare occasions it has been known for a student to talk with the hat and influence where it decides to place them in.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THR the rising trend of homeschooling within ethnic/racial minority groups", "shape": "dot", "size": 10, "title": "THR the rising trend of homeschooling within ethnic/racial minority groups"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THP the German model of higher education", "shape": "dot", "size": 10, "title": "THP the German model of higher education"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THBT western liberal democracies should admit immigrants by lottery rather than by prioritizing factors such as salary, education, and language competency (excluding immigrants with serious criminal convictions)", "shape": "dot", "size": 10, "title": "THBT western liberal democracies should admit immigrants by lottery rather than by prioritizing factors such as salary, education, and language competency (excluding immigrants with serious criminal convictions)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THP Subdury Schools", "shape": "dot", "size": 10, "title": "THP Subdury Schools"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THS the Implementation of Performance Based Funding Metrics for Public Universities", "shape": "dot", "size": 10, "title": "THS the Implementation of Performance Based Funding Metrics for Public Universities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THW drastically reduce the number of university spaces on offer", "shape": "dot", "size": 10, "title": "THW drastically reduce the number of university spaces on offer"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THW provide significant tax benefits to publicly listed STEM (Science, Technology, Engineering, and Mathematics) companies whose top executives are at least 50% non-cisgender men.", "shape": "dot", "size": 10, "title": "THW provide significant tax benefits to publicly listed STEM (Science, Technology, Engineering, and Mathematics) companies whose top executives are at least 50% non-cisgender men."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THBT secondary educational institutions should teach students topics that are related to child abuse experiences (including but not limited to: identifying abuse \u0026 parents\u0027 possible personality disorders, ways to cope when living inside an abusive household)", "shape": "dot", "size": 10, "title": "THBT secondary educational institutions should teach students topics that are related to child abuse experiences (including but not limited to: identifying abuse \u0026 parents\u0027 possible personality disorders, ways to cope when living inside an abusive household)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THBT universities should prioritize increasing diversity (e.g. gender, ethnicity, etc.) among faculty members, even at the expense of qualification", "shape": "dot", "size": 10, "title": "THBT universities should prioritize increasing diversity (e.g. gender, ethnicity, etc.) among faculty members, even at the expense of qualification"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "TH, as a Muslim SEA nation, would reject Saudi Arabian investments in education", "shape": "dot", "size": 10, "title": "TH, as a Muslim SEA nation, would reject Saudi Arabian investments in education"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THR the decline of the humanities in higher education", "shape": "dot", "size": 10, "title": "THR the decline of the humanities in higher education"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "This House Supports Western universities setting up campuses in authoritarian states (e.g. NYU in UAE, Nottingham in China) etc.", "shape": "dot", "size": 10, "title": "This House Supports Western universities setting up campuses in authoritarian states (e.g. NYU in UAE, Nottingham in China) etc."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THBT teachers\u0027 salaries should be pegged to the academic and behavioural improvements in their students.", "shape": "dot", "size": 10, "title": "THBT teachers\u0027 salaries should be pegged to the academic and behavioural improvements in their students."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THBT university admissions should heavily prioritise admitting students with lived experiences related to their course of study", "shape": "dot", "size": 10, "title": "THBT university admissions should heavily prioritise admitting students with lived experiences related to their course of study"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "That, as a promising university graduate, we should opt to make the largest amount of money possible and donate it to charities instead of directly working in social fields.", "shape": "dot", "size": 10, "title": "That, as a promising university graduate, we should opt to make the largest amount of money possible and donate it to charities instead of directly working in social fields."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "That we should implement a Mastery Learning framework at all levels of education", "shape": "dot", "size": 10, "title": "That we should implement a Mastery Learning framework at all levels of education"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THW grant student council disciplinary power, including the power to take punitive action to the extent of expulsion", "shape": "dot", "size": 10, "title": "THW grant student council disciplinary power, including the power to take punitive action to the extent of expulsion"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "As an average student from lower socio-economic class who lives in a developing country, This House Would choose a generalist career path over becoming a specialist", "shape": "dot", "size": 10, "title": "As an average student from lower socio-economic class who lives in a developing country, This House Would choose a generalist career path over becoming a specialist"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THS the \"Free School\"Philosophy", "shape": "dot", "size": 10, "title": "THS the \"Free School\"Philosophy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THBT post conflict states should not instil nationalism through the education system", "shape": "dot", "size": 10, "title": "THBT post conflict states should not instil nationalism through the education system"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "This house believes that developing nations with ethnically diverse populations should prohibit vernacular schools", "shape": "dot", "size": 10, "title": "This house believes that developing nations with ethnically diverse populations should prohibit vernacular schools"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THBT all universities should permanently move from letter grades to pass/fail systems", "shape": "dot", "size": 10, "title": "THBT all universities should permanently move from letter grades to pass/fail systems"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THW rename Yale", "shape": "dot", "size": 10, "title": "THW rename Yale"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "This House Would only allow university admission on the basis of standardized testing, as opposed to non-quantitative methods (e.g. essays, alumni interviews)", "shape": "dot", "size": 10, "title": "This House Would only allow university admission on the basis of standardized testing, as opposed to non-quantitative methods (e.g. essays, alumni interviews)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "This House Believes That 10 Minute School should remove the videos", "shape": "dot", "size": 10, "title": "This House Believes That 10 Minute School should remove the videos"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THBT policies regarding the teaching and use of language should be descriptive rather than prescriptive", "shape": "dot", "size": 10, "title": "THBT policies regarding the teaching and use of language should be descriptive rather than prescriptive"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "That we oppose the medicalisation of learning disabilities.", "shape": "dot", "size": 10, "title": "That we oppose the medicalisation of learning disabilities."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THR The increasing trend of left wing censorship in university campuses and the overall academic and literary sphere", "shape": "dot", "size": 10, "title": "THR The increasing trend of left wing censorship in university campuses and the overall academic and literary sphere"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "TH prefers, as a means of enrolling people in the army, conscription by lottery rather than aggressive recruitment of volunteers", "shape": "dot", "size": 10, "title": "TH prefers, as a means of enrolling people in the army, conscription by lottery rather than aggressive recruitment of volunteers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "THS the pirating and mass availability of academic resources", "shape": "dot", "size": 10, "title": "THS the pirating and mass availability of academic resources"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THBT the educational system should portray drug use in an objective way (with all pros and cons), rather than in an solely negative light", "shape": "dot", "size": 10, "title": "THBT the educational system should portray drug use in an objective way (with all pros and cons), rather than in an solely negative light"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THBT sex education classes in schools should teach techniques for sexual gratification (including, but not limited to, anal sex, oral sex, mutual gratification and masturbation)", "shape": "dot", "size": 10, "title": "THBT sex education classes in schools should teach techniques for sexual gratification (including, but not limited to, anal sex, oral sex, mutual gratification and masturbation)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "THBT universities should establish \"dangerous spaces\"", "shape": "dot", "size": 10, "title": "THBT universities should establish \"dangerous spaces\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THS the establishment of LGBTQIA+-only schools in conservative areas", "shape": "dot", "size": 10, "title": "THS the establishment of LGBTQIA+-only schools in conservative areas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "Assuming this medicine exists and is widely accessible, This House Believes That universities should ban and actively test for this drug", "shape": "dot", "size": 10, "title": "Assuming this medicine exists and is widely accessible, This House Believes That universities should ban and actively test for this drug"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "THW forbid universities in the US from accepting research funding from China", "shape": "dot", "size": 10, "title": "THW forbid universities in the US from accepting research funding from China"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "As an 18 year old female from a lower income family receiving a scholarship to attend a highly prestigious yet highly competitive university, THW invest all their time and resources in the most lucrative field to work in, as opposed to seeking knowledge and experiences from multiple fields", "shape": "dot", "size": 10, "title": "As an 18 year old female from a lower income family receiving a scholarship to attend a highly prestigious yet highly competitive university, THW invest all their time and resources in the most lucrative field to work in, as opposed to seeking knowledge and experiences from multiple fields"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "Assuming viability, THW implement ClassDojo in public and private education systems.", "shape": "dot", "size": 10, "title": "Assuming viability, THW implement ClassDojo in public and private education systems."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THO the commercialization of competitive debating (such as for profit debate training, paid workshops, paying IAs a salary, paying pros to speak with wealthy beginners, etc)", "shape": "dot", "size": 10, "title": "THO the commercialization of competitive debating (such as for profit debate training, paid workshops, paying IAs a salary, paying pros to speak with wealthy beginners, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "THR the rise of business schools", "shape": "dot", "size": 10, "title": "THR the rise of business schools"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "This House Believes That schools should emphasize the moral failures and wrongdoings of people considered to be national and social heroes (e.g Churchill, Gandhi, Mother Teresa)", "shape": "dot", "size": 10, "title": "This House Believes That schools should emphasize the moral failures and wrongdoings of people considered to be national and social heroes (e.g Churchill, Gandhi, Mother Teresa)"}]);
+                  edges = new vis.DataSet([{"from": 1, "to": 17, "width": 0.1}, {"from": 1, "to": 28, "width": 0.1}, {"from": 1, "to": 47, "width": 0.1}, {"from": 3, "to": 4, "width": 0.1}, {"from": 5, "to": 6, "width": 0.1}, {"from": 7, "to": 56, "width": 0.1}, {"from": 10, "to": 31, "width": 0.1}, {"from": 11, "to": 41, "width": 0.1}, {"from": 17, "to": 28, "width": 0.1}, {"from": 17, "to": 47, "width": 0.1}, {"from": 19, "to": 26, "width": 0.1}, {"from": 20, "to": 40, "width": 0.1}, {"from": 21, "to": 30, "width": 0.1}, {"from": 21, "to": 49, "width": 0.1}, {"from": 24, "to": 34, "width": 0.1}, {"from": 28, "to": 47, "width": 0.1}, {"from": 30, "to": 32, "width": 0.1}, {"from": 30, "to": 33, "width": 0.1}, {"from": 30, "to": 37, "width": 0.1}, {"from": 30, "to": 49, "width": 0.1}, {"from": 30, "to": 56, "width": 0.1}, {"from": 30, "to": 64, "width": 0.1}, {"from": 33, "to": 56, "width": 0.1}, {"from": 33, "to": 64, "width": 0.1}, {"from": 37, "to": 56, "width": 0.1}, {"from": 44, "to": 64, "width": 0.1}, {"from": 54, "to": 55, "width": 0.1}, {"from": 59, "to": 60, "width": 0.1}, {"from": 60, "to": 71, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

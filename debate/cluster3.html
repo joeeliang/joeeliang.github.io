@@ -1,0 +1,381 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1980px;
+                 height: 1500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<div id="loadingBar">
+<div class="outerBorder">
+<div id="text">0%</div>
+<div id="border">
+<div id="bar"></div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THW legalise recreational use of all drugs by adults", "shape": "dot", "size": 10, "title": "THW legalise recreational use of all drugs by adults"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THS the increasing decriminalisation of drug use", "shape": "dot", "size": 10, "title": "THS the increasing decriminalisation of drug use"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THW abolish sex offender registers of the US", "shape": "dot", "size": 10, "title": "THW abolish sex offender registers of the US"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THW abolish the sex offender registries in the US", "shape": "dot", "size": 10, "title": "THW abolish the sex offender registries in the US"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THR the prevalence of using precedence as a standard in court rulings", "shape": "dot", "size": 10, "title": "THR the prevalence of using precedence as a standard in court rulings"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THR the prevalence of using precedent as a standard in court rulings", "shape": "dot", "size": 10, "title": "THR the prevalence of using precedent as a standard in court rulings"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THBT individuals who commit petty crimes (e.g. petty theft, simple assault, disorderly conduct, vandalism, reckless driving, indecent exposure, etc.) should be tried solely by members of their local community", "shape": "dot", "size": 10, "title": "THBT individuals who commit petty crimes (e.g. petty theft, simple assault, disorderly conduct, vandalism, reckless driving, indecent exposure, etc.) should be tried solely by members of their local community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THW allow victims of violent crimes to veto the prosecution of their offender", "shape": "dot", "size": 10, "title": "THW allow victims of violent crimes to veto the prosecution of their offender"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THBT the consequences of of low severity crimes (e.g. shoplifting, public intoxication) should be determined by members of the community in which the crime took place.", "shape": "dot", "size": 10, "title": "THBT the consequences of of low severity crimes (e.g. shoplifting, public intoxication) should be determined by members of the community in which the crime took place."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THW legalise vigilantism in high crime areas", "shape": "dot", "size": 10, "title": "THW legalise vigilantism in high crime areas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 106, "label": "THBT criminal law should not distinguish an attempt to commit a crime from successfully committing a crime.", "shape": "dot", "size": 10, "title": "THBT criminal law should not distinguish an attempt to commit a crime from successfully committing a crime."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 115, "label": "That the victim of crimes should be able to choose whether the offender is dealt with under civil law or criminal law", "shape": "dot", "size": 10, "title": "That the victim of crimes should be able to choose whether the offender is dealt with under civil law or criminal law"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THBT criminal justice policy (eg enforcement, sentencing, rehabilitation, and monitoring) should be outsourced to technocrats instead of elected representatives", "shape": "dot", "size": 10, "title": "THBT criminal justice policy (eg enforcement, sentencing, rehabilitation, and monitoring) should be outsourced to technocrats instead of elected representatives"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THBT the state should heavily invest in replacing judicial officers with AI", "shape": "dot", "size": 10, "title": "THBT the state should heavily invest in replacing judicial officers with AI"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THS the development and use of sentencing algorithms", "shape": "dot", "size": 10, "title": "THS the development and use of sentencing algorithms"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THW include regret as a factor in sentencing", "shape": "dot", "size": 10, "title": "THW include regret as a factor in sentencing"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "THW make all punishments imposed by the criminal justice system proportional to the wealth of the accused", "shape": "dot", "size": 10, "title": "THW make all punishments imposed by the criminal justice system proportional to the wealth of the accused"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 100, "label": "THW abolish all legislatively set sentencing guidelines", "shape": "dot", "size": 10, "title": "THW abolish all legislatively set sentencing guidelines"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 112, "label": "THBT all sentencing should be decided according to an algorithm that considers purely the probability of recidivism of the convict", "shape": "dot", "size": 10, "title": "THBT all sentencing should be decided according to an algorithm that considers purely the probability of recidivism of the convict"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THBT it is justified to make a criminal go through the exact same horror or pain as the victim as a \"form of justice\"", "shape": "dot", "size": 10, "title": "THBT it is justified to make a criminal go through the exact same horror or pain as the victim as a \"form of justice\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "This house believes that where a person has made a genuine attempt to kill someone, they should be punished the same regardless of whether the victim lives or dies", "shape": "dot", "size": 10, "title": "This house believes that where a person has made a genuine attempt to kill someone, they should be punished the same regardless of whether the victim lives or dies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "For scenarios where such a victim is revived by the killer, THW acquit the accused", "shape": "dot", "size": 10, "title": "For scenarios where such a victim is revived by the killer, THW acquit the accused"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "That criminal trials should continue even when the accused is deceased", "shape": "dot", "size": 10, "title": "That criminal trials should continue even when the accused is deceased"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THW hold bystanders to crime liable for not responding to crime", "shape": "dot", "size": 10, "title": "THW hold bystanders to crime liable for not responding to crime"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 99, "label": "THW allow convicted criminals whose crimes caused their victims suffering to choose to undergo the exact same experience as their victims did, by using the technology, as a substitute for a prison sentence.", "shape": "dot", "size": 10, "title": "THW allow convicted criminals whose crimes caused their victims suffering to choose to undergo the exact same experience as their victims did, by using the technology, as a substitute for a prison sentence."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 103, "label": "THW implement TCDS on all criminals convicted of violent crimes", "shape": "dot", "size": 10, "title": "THW implement TCDS on all criminals convicted of violent crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 118, "label": "THW make the State liable for recidivist crimes", "shape": "dot", "size": 10, "title": "THW make the State liable for recidivist crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THW not grant employer\u2019s access to applicants criminal records", "shape": "dot", "size": 10, "title": "THW not grant employer\u2019s access to applicants criminal records"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THW not grant employers access to applicants\u0027 criminal records", "shape": "dot", "size": 10, "title": "THW not grant employers access to applicants\u0027 criminal records"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "THW allow ex-felons to become police officers", "shape": "dot", "size": 10, "title": "THW allow ex-felons to become police officers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 111, "label": "THW not give employers access to criminal records of potential employees", "shape": "dot", "size": 10, "title": "THW not give employers access to criminal records of potential employees"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 117, "label": "THBT states should be legally liable for recidivist crimes (inexact wording)", "shape": "dot", "size": 10, "title": "THBT states should be legally liable for recidivist crimes (inexact wording)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THW allow the public to pardon individuals convicted of crimes via referendum", "shape": "dot", "size": 10, "title": "THW allow the public to pardon individuals convicted of crimes via referendum"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "THW remove the executive\u0027s power to grant any form of pardon", "shape": "dot", "size": 10, "title": "THW remove the executive\u0027s power to grant any form of pardon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 131, "label": "THW allow the pardoning of whistleblowers by referendum", "shape": "dot", "size": 10, "title": "THW allow the pardoning of whistleblowers by referendum"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THW criminalise gang membership", "shape": "dot", "size": 10, "title": "THW criminalise gang membership"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "THW grant amnesty to members of drgu gangs operating in violent areas if gang leaders end all turf wars", "shape": "dot", "size": 10, "title": "THW grant amnesty to members of drgu gangs operating in violent areas if gang leaders end all turf wars"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THW decriminalise grafitti", "shape": "dot", "size": 10, "title": "THW decriminalise grafitti"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THBT Supreme Courts should abide by a textualist model of interpretation", "shape": "dot", "size": 10, "title": "THBT Supreme Courts should abide by a textualist model of interpretation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 124, "label": "THBT Supreme Court justices should adopt Originalist stances in applying constitutional law", "shape": "dot", "size": 10, "title": "THBT Supreme Court justices should adopt Originalist stances in applying constitutional law"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THW not punish people below the poverty line for economic crimes", "shape": "dot", "size": 10, "title": "THW not punish people below the poverty line for economic crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "That we would end the practice of deporting criminals", "shape": "dot", "size": 10, "title": "That we would end the practice of deporting criminals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 116, "label": "That we should abolish the International Criminal Court", "shape": "dot", "size": 10, "title": "That we should abolish the International Criminal Court"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 122, "label": "That we should abolish all statutes of limitations in criminal cases.", "shape": "dot", "size": 10, "title": "That we should abolish all statutes of limitations in criminal cases."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "THS filial responsibility law", "shape": "dot", "size": 10, "title": "THS filial responsibility law"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THS filial responsibility laws", "shape": "dot", "size": 10, "title": "THS filial responsibility laws"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "This House Would require all parties in civil trials to be represented exclusively by state provided lawyers", "shape": "dot", "size": 10, "title": "This House Would require all parties in civil trials to be represented exclusively by state provided lawyers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 110, "label": "THW require both parties to use state lawyers, instead of private lawyers, in defamation trials", "shape": "dot", "size": 10, "title": "THW require both parties to use state lawyers, instead of private lawyers, in defamation trials"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "THW exonerate Hari of all crimes", "shape": "dot", "size": 10, "title": "THW exonerate Hari of all crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 135, "label": "THW prosecute communities for complicity in honour killings", "shape": "dot", "size": 10, "title": "THW prosecute communities for complicity in honour killings"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THW abolish the law against scandalizing the court in India", "shape": "dot", "size": 10, "title": "THW abolish the law against scandalizing the court in India"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "THW heavily penalise corporations for punishing their employees for engaging in legally permitted speech", "shape": "dot", "size": 10, "title": "THW heavily penalise corporations for punishing their employees for engaging in legally permitted speech"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 101, "label": "THW prohibit the dismissal of employees for their use of free speech or expression.", "shape": "dot", "size": 10, "title": "THW prohibit the dismissal of employees for their use of free speech or expression."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THS the use of the Hannibal Directive in combatting terrorist organisations", "shape": "dot", "size": 10, "title": "THS the use of the Hannibal Directive in combatting terrorist organisations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 128, "label": "That states should opt to implement the Hannibal Directive in dealing with their soldiers captured by terrorists.", "shape": "dot", "size": 10, "title": "That states should opt to implement the Hannibal Directive in dealing with their soldiers captured by terrorists."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THS judicial activism", "shape": "dot", "size": 10, "title": "THS judicial activism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 133, "label": "THS the suffrage of prisoners", "shape": "dot", "size": 10, "title": "THS the suffrage of prisoners"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "For crimes with low prosecution and conviction rates (e.g. sexual assault, domestic violence or membership of criminal gangs), THW lower the burden of proof from \"beyond reasonable doubt\" to \"on the balance of probabilities\"", "shape": "dot", "size": 10, "title": "For crimes with low prosecution and conviction rates (e.g. sexual assault, domestic violence or membership of criminal gangs), THW lower the burden of proof from \"beyond reasonable doubt\" to \"on the balance of probabilities\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 121, "label": "That evidence that is reliable but illegally obtained by the police should be excluded as evidence in all criminal trials.", "shape": "dot", "size": 10, "title": "That evidence that is reliable but illegally obtained by the police should be excluded as evidence in all criminal trials."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "THW subsidise companies for the employment of ex-convicts", "shape": "dot", "size": 10, "title": "THW subsidise companies for the employment of ex-convicts"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 104, "label": "THS privatisation of prisons", "shape": "dot", "size": 10, "title": "THS privatisation of prisons"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THW abolish the prison system", "shape": "dot", "size": 10, "title": "THW abolish the prison system"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "Given the technology, THW erase society\u0027s memory and evidence of the criminal past of former convicts after their release from prison.", "shape": "dot", "size": 10, "title": "Given the technology, THW erase society\u0027s memory and evidence of the criminal past of former convicts after their release from prison."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 119, "label": "Assuming it is feasible to measure rehabilitation, THW release prisoners purely based on their level of rehabilitation as opposed to having set prison sentences.", "shape": "dot", "size": 10, "title": "Assuming it is feasible to measure rehabilitation, THW release prisoners purely based on their level of rehabilitation as opposed to having set prison sentences."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THW allow illegally obtained evidence to be admissable in court", "shape": "dot", "size": 10, "title": "THW allow illegally obtained evidence to be admissable in court"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "Assuming there exists technology that can access and project memories, THW allow using it for evidence in court.", "shape": "dot", "size": 10, "title": "Assuming there exists technology that can access and project memories, THW allow using it for evidence in court."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 98, "label": "THW allow the use of evidence obtained illegally in court", "shape": "dot", "size": 10, "title": "THW allow the use of evidence obtained illegally in court"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "THP trials where victims and defendants are anonymous", "shape": "dot", "size": 10, "title": "THP trials where victims and defendants are anonymous"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THBT individuals convicted for crimes that were later legalised should be retrospectively cleared of those charges and released from prison if applicable.", "shape": "dot", "size": 10, "title": "THBT individuals convicted for crimes that were later legalised should be retrospectively cleared of those charges and released from prison if applicable."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "THS the creation of an international court to prosecute \u0027crimes against the earth\u0027", "shape": "dot", "size": 10, "title": "THS the creation of an international court to prosecute \u0027crimes against the earth\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 123, "label": "That war criminals should be tried in their home country instead of the International Criminal Court (ICC).", "shape": "dot", "size": 10, "title": "That war criminals should be tried in their home country instead of the International Criminal Court (ICC)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "THBT states should not prosecute members of terrorist organisations (e.g. ISIS, Al-Qaeda) who surrender to those states", "shape": "dot", "size": 10, "title": "THBT states should not prosecute members of terrorist organisations (e.g. ISIS, Al-Qaeda) who surrender to those states"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "That the state should pay reparations to individuals convicted in the past for actions that are no longer recognised as a crime.", "shape": "dot", "size": 10, "title": "That the state should pay reparations to individuals convicted in the past for actions that are no longer recognised as a crime."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "THBT the US should require the NRA to pay reparations to victims of gun violence", "shape": "dot", "size": 10, "title": "THBT the US should require the NRA to pay reparations to victims of gun violence"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 108, "label": "That we should make it an offense to witness a crime and not report it", "shape": "dot", "size": 10, "title": "That we should make it an offense to witness a crime and not report it"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 109, "label": "THW mandate that in any legal case both sides must have access to an equally priced counsel (for example a rich person can hire as expensive a defense attorney as they would like, but money must be provided to the plaintiff if they cannot afford a lawyer of a similar caliber)", "shape": "dot", "size": 10, "title": "THW mandate that in any legal case both sides must have access to an equally priced counsel (for example a rich person can hire as expensive a defense attorney as they would like, but money must be provided to the plaintiff if they cannot afford a lawyer of a similar caliber)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 114, "label": "That the state should more harshly punish people who commit crimes against members of social groups who experience disproportionately high rates of violence regardless of that offender\u2019s motivation", "shape": "dot", "size": 10, "title": "That the state should more harshly punish people who commit crimes against members of social groups who experience disproportionately high rates of violence regardless of that offender\u2019s motivation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 129, "label": "In civil court cases, TH would allow plaintiffs to sell their right to sue to third parties", "shape": "dot", "size": 10, "title": "In civil court cases, TH would allow plaintiffs to sell their right to sue to third parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 136, "label": "THBT the United States should adopt more pro-plaintiff policies, such as abandoning the need to prove material harm and intent to defame.", "shape": "dot", "size": 10, "title": "THBT the United States should adopt more pro-plaintiff policies, such as abandoning the need to prove material harm and intent to defame."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THBT the Kiera Bell ruling does more harm than good", "shape": "dot", "size": 10, "title": "THBT the Kiera Bell ruling does more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THW provide doctors performing life saving procedures immunity from legal action against them", "shape": "dot", "size": 10, "title": "THW provide doctors performing life saving procedures immunity from legal action against them"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT the state should bear all costs of elective sex reassignment surgery", "shape": "dot", "size": 10, "title": "THBT the state should bear all costs of elective sex reassignment surgery"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THBT incest should be legalized in cases where the familial relationship is not known prior to marriage", "shape": "dot", "size": 10, "title": "THBT incest should be legalized in cases where the familial relationship is not known prior to marriage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THS an unrestricted right to death for legal adults", "shape": "dot", "size": 10, "title": "THS an unrestricted right to death for legal adults"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THW require criminal cases in which the defendant is an ethnic or religious minority to be adjudicated by a member of the same identity", "shape": "dot", "size": 10, "title": "THW require criminal cases in which the defendant is an ethnic or religious minority to be adjudicated by a member of the same identity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THW allow for paper abortions in jurisdictions where abortion is legal", "shape": "dot", "size": 10, "title": "THW allow for paper abortions in jurisdictions where abortion is legal"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THW hold pharmaceutical companies criminally liable for the opioid crisis", "shape": "dot", "size": 10, "title": "THW hold pharmaceutical companies criminally liable for the opioid crisis"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THW make bullying a crime", "shape": "dot", "size": 10, "title": "THW make bullying a crime"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THR the concept of Criminal Contempt of Court", "shape": "dot", "size": 10, "title": "THR the concept of Criminal Contempt of Court"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "TH, as the Nuremberg Trial after WWII, will grant amnesty to those Nazi officials who are ready to be a witness against the masterminds of the Holocaust and other Nazi war crimes and crimes against humanity.", "shape": "dot", "size": 10, "title": "TH, as the Nuremberg Trial after WWII, will grant amnesty to those Nazi officials who are ready to be a witness against the masterminds of the Holocaust and other Nazi war crimes and crimes against humanity."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THBT non-autocratic states with compulsory military service should allow individuals to exempt themselves on moral grounds.", "shape": "dot", "size": 10, "title": "THBT non-autocratic states with compulsory military service should allow individuals to exempt themselves on moral grounds."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THW stay in Springfield", "shape": "dot", "size": 10, "title": "THW stay in Springfield"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THBT Asian regimes accused of committing human rights violations should be investigated by TRCs rather than subject to punitive mechanisms (ICTs, ICC)", "shape": "dot", "size": 10, "title": "THBT Asian regimes accused of committing human rights violations should be investigated by TRCs rather than subject to punitive mechanisms (ICTs, ICC)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THW ban relatives of past office holders from ever running for office", "shape": "dot", "size": 10, "title": "THW ban relatives of past office holders from ever running for office"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THBT the manager should hand over the employee to the authorities", "shape": "dot", "size": 10, "title": "THBT the manager should hand over the employee to the authorities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THW repeal the Johnson Amendment", "shape": "dot", "size": 10, "title": "THW repeal the Johnson Amendment"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THS defunding the police as opposed to seeking internal reform", "shape": "dot", "size": 10, "title": "THS defunding the police as opposed to seeking internal reform"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "TH opposes awarding Samuel Paty the Legion of Honor", "shape": "dot", "size": 10, "title": "TH opposes awarding Samuel Paty the Legion of Honor"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "THW REDUCE THE PRISON SENTENCES OF CONVICTS OF SERIOUS CRIMES IF THEY VOLUNTEER FOR CRITICALLY IMPORTANT BUT POTENTIALLY HAZARDOUS MEDICAL EXPERIMENTS", "shape": "dot", "size": 10, "title": "THW REDUCE THE PRISON SENTENCES OF CONVICTS OF SERIOUS CRIMES IF THEY VOLUNTEER FOR CRITICALLY IMPORTANT BUT POTENTIALLY HAZARDOUS MEDICAL EXPERIMENTS"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THW criminalise poltiicians who don\u0027t fulfill campaign promises", "shape": "dot", "size": 10, "title": "THW criminalise poltiicians who don\u0027t fulfill campaign promises"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THW legalise the licensed hunting of endangered animals", "shape": "dot", "size": 10, "title": "THW legalise the licensed hunting of endangered animals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THW only imprison people who are assessed to pose an active danger to society", "shape": "dot", "size": 10, "title": "THW only imprison people who are assessed to pose an active danger to society"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THR Coppa Law in Youtube", "shape": "dot", "size": 10, "title": "THR Coppa Law in Youtube"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THBT The Criminal Justice System should be redesigned in a way that disproportionately highlights the premise of \u0027mens rea\u0027 over \u0027actus reus\u2019", "shape": "dot", "size": 10, "title": "THBT The Criminal Justice System should be redesigned in a way that disproportionately highlights the premise of \u0027mens rea\u0027 over \u0027actus reus\u2019"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THBT the advocacy against police brutality would be better of racially blind", "shape": "dot", "size": 10, "title": "THBT the advocacy against police brutality would be better of racially blind"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THS a policy of assassinating leaders of transnational gangs (e.g. MS-13) irrespective of the nation in which they are located", "shape": "dot", "size": 10, "title": "THS a policy of assassinating leaders of transnational gangs (e.g. MS-13) irrespective of the nation in which they are located"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THBT progressive judges should not punish or heavily mitigate sentences for civil disobedients (e.g. not punishing them, even if they are found guilty; or reducing sentences).", "shape": "dot", "size": 10, "title": "THBT progressive judges should not punish or heavily mitigate sentences for civil disobedients (e.g. not punishing them, even if they are found guilty; or reducing sentences)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THW reinstate the Glass-Steagall Act.", "shape": "dot", "size": 10, "title": "THW reinstate the Glass-Steagall Act."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THR sports association and/or teams\u0027 decision to \u0027cancel\u0027 the achievement of atheles with CTE who committed murder/violent crimes", "shape": "dot", "size": 10, "title": "THR sports association and/or teams\u0027 decision to \u0027cancel\u0027 the achievement of atheles with CTE who committed murder/violent crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "THW allow parents to sue their adult children for renumeration", "shape": "dot", "size": 10, "title": "THW allow parents to sue their adult children for renumeration"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "That liberal supreme court s should misinterpret the constitution to advance civil rights", "shape": "dot", "size": 10, "title": "That liberal supreme court s should misinterpret the constitution to advance civil rights"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THBT the Mexican govenment should retroactively legalise the production and distribution of drugs, instead of keeping them illegal", "shape": "dot", "size": 10, "title": "THBT the Mexican govenment should retroactively legalise the production and distribution of drugs, instead of keeping them illegal"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THBT poverty should receive suspect classification in the US legal system", "shape": "dot", "size": 10, "title": "THBT poverty should receive suspect classification in the US legal system"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THW legalise euthanasia", "shape": "dot", "size": 10, "title": "THW legalise euthanasia"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "In sanctuary cities, THW grant undocumented immigrants the right to vote", "shape": "dot", "size": 10, "title": "In sanctuary cities, THW grant undocumented immigrants the right to vote"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "THBT WSDC adjudication should switch to a consensus methodology of adjudication.", "shape": "dot", "size": 10, "title": "THBT WSDC adjudication should switch to a consensus methodology of adjudication."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "THW remove the privilege of self incrimination", "shape": "dot", "size": 10, "title": "THW remove the privilege of self incrimination"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THW allow police officers to refuse orders on grounds of conscience", "shape": "dot", "size": 10, "title": "THW allow police officers to refuse orders on grounds of conscience"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "THP the removal of sex and gender markers (e.g., on government forms, IDs, and other areas of legal recognition) as opposed to the inclusion of nonbinary, \"X\", and other gender or sex markers", "shape": "dot", "size": 10, "title": "THP the removal of sex and gender markers (e.g., on government forms, IDs, and other areas of legal recognition) as opposed to the inclusion of nonbinary, \"X\", and other gender or sex markers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "THBT Batman should abolish his no kill rule", "shape": "dot", "size": 10, "title": "THBT Batman should abolish his no kill rule"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "This House believes that the protections of international law conventions and treaties should not apply to combatants from terrorist organisations (e.g. prohibition on torture, prisoner of war status, guarantee of post-conflict release)", "shape": "dot", "size": 10, "title": "This House believes that the protections of international law conventions and treaties should not apply to combatants from terrorist organisations (e.g. prohibition on torture, prisoner of war status, guarantee of post-conflict release)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "THW require policing budgets and policy to be decided by local referenda", "shape": "dot", "size": 10, "title": "THW require policing budgets and policy to be decided by local referenda"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "THW grant only non-male individuals the right to bear arms", "shape": "dot", "size": 10, "title": "THW grant only non-male individuals the right to bear arms"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "THBT the \u0027cultural defence\u0027 is a legitimate defence in criminal proceedings", "shape": "dot", "size": 10, "title": "THBT the \u0027cultural defence\u0027 is a legitimate defence in criminal proceedings"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "TH supports the narrative that All Cops Are Bad", "shape": "dot", "size": 10, "title": "TH supports the narrative that All Cops Are Bad"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "THBT Michael should not be convicted for his crimes", "shape": "dot", "size": 10, "title": "THBT Michael should not be convicted for his crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 102, "label": "TH, as a POC witnessing a non-violent crime (theft, trespassing, drug possession) by another POC, would choose to not call the cops.", "shape": "dot", "size": 10, "title": "TH, as a POC witnessing a non-violent crime (theft, trespassing, drug possession) by another POC, would choose to not call the cops."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 105, "label": "THP the Collegium System for the appointment of Federal Judges and Justices instead of Executive Nomination System in USA.", "shape": "dot", "size": 10, "title": "THP the Collegium System for the appointment of Federal Judges and Justices instead of Executive Nomination System in USA."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 107, "label": "That we prefer the establishment of truth and reconciliation commissions to attempts at pursuing retributive justice (e.g. prosecuting perpetrators) in post-conflict states", "shape": "dot", "size": 10, "title": "That we prefer the establishment of truth and reconciliation commissions to attempts at pursuing retributive justice (e.g. prosecuting perpetrators) in post-conflict states"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 113, "label": "THBT US Senators who approved (in confidential briefings) the CIA\u0027s use of enhanced interrogation (waterboarding, sleep deprivation, exposure to low temperatures for extended periods etc.) should be tried for war crimes", "shape": "dot", "size": 10, "title": "THBT US Senators who approved (in confidential briefings) the CIA\u0027s use of enhanced interrogation (waterboarding, sleep deprivation, exposure to low temperatures for extended periods etc.) should be tried for war crimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 120, "label": "THBT it is legitimate for individuals to evade taxes in authoritarian states", "shape": "dot", "size": 10, "title": "THBT it is legitimate for individuals to evade taxes in authoritarian states"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 125, "label": "THBT trans legal advocates should seek to establish precedent that protects trans people under existing sex discrimination law, rather than pursuing anti-discrimination laws for trans communities", "shape": "dot", "size": 10, "title": "THBT trans legal advocates should seek to establish precedent that protects trans people under existing sex discrimination law, rather than pursuing anti-discrimination laws for trans communities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 126, "label": "THW allow victims of miscarriages of justice to sue expert witnesses for incompetence", "shape": "dot", "size": 10, "title": "THW allow victims of miscarriages of justice to sue expert witnesses for incompetence"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 127, "label": "THR the Goldwater Rule", "shape": "dot", "size": 10, "title": "THR the Goldwater Rule"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 130, "label": "This House would prohibit the use of statistical risk assessments when criminal courts are making sentencing decisions.", "shape": "dot", "size": 10, "title": "This House would prohibit the use of statistical risk assessments when criminal courts are making sentencing decisions."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 132, "label": "THW disallow police officers from unionizing", "shape": "dot", "size": 10, "title": "THW disallow police officers from unionizing"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 134, "label": "THS the indeterminancy (vagueness and interpretability) of the US constitution", "shape": "dot", "size": 10, "title": "THS the indeterminancy (vagueness and interpretability) of the US constitution"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 137, "label": "This House believes that the United States government should cede the authority to prosecute criminal trials involving African Americans (as either victims or alleged perpetrators) to African American interest groups, and allocate funding for this.", "shape": "dot", "size": 10, "title": "This House believes that the United States government should cede the authority to prosecute criminal trials involving African Americans (as either victims or alleged perpetrators) to African American interest groups, and allocate funding for this."}]);
+                  edges = new vis.DataSet([{"from": 1, "to": 48, "width": 0.1}, {"from": 8, "to": 9, "width": 0.1}, {"from": 10, "to": 11, "width": 0.1}, {"from": 13, "to": 22, "width": 0.1}, {"from": 13, "to": 38, "width": 0.1}, {"from": 13, "to": 51, "width": 0.1}, {"from": 13, "to": 106, "width": 0.1}, {"from": 13, "to": 115, "width": 0.1}, {"from": 14, "to": 44, "width": 0.1}, {"from": 16, "to": 77, "width": 0.1}, {"from": 16, "to": 88, "width": 0.1}, {"from": 16, "to": 100, "width": 0.1}, {"from": 16, "to": 112, "width": 0.1}, {"from": 18, "to": 58, "width": 0.1}, {"from": 18, "to": 115, "width": 0.1}, {"from": 19, "to": 84, "width": 0.1}, {"from": 22, "to": 28, "width": 0.1}, {"from": 22, "to": 88, "width": 0.1}, {"from": 22, "to": 99, "width": 0.1}, {"from": 22, "to": 100, "width": 0.1}, {"from": 22, "to": 103, "width": 0.1}, {"from": 22, "to": 115, "width": 0.1}, {"from": 22, "to": 118, "width": 0.1}, {"from": 27, "to": 50, "width": 0.1}, {"from": 27, "to": 70, "width": 0.1}, {"from": 27, "to": 111, "width": 0.1}, {"from": 28, "to": 117, "width": 0.1}, {"from": 28, "to": 118, "width": 0.1}, {"from": 30, "to": 60, "width": 0.1}, {"from": 30, "to": 131, "width": 0.1}, {"from": 31, "to": 93, "width": 0.1}, {"from": 37, "to": 48, "width": 0.1}, {"from": 38, "to": 115, "width": 0.1}, {"from": 39, "to": 124, "width": 0.1}, {"from": 40, "to": 88, "width": 0.1}, {"from": 41, "to": 116, "width": 0.1}, {"from": 41, "to": 122, "width": 0.1}, {"from": 47, "to": 90, "width": 0.1}, {"from": 49, "to": 110, "width": 0.1}, {"from": 50, "to": 111, "width": 0.1}, {"from": 56, "to": 88, "width": 0.1}, {"from": 56, "to": 135, "width": 0.1}, {"from": 57, "to": 116, "width": 0.1}, {"from": 60, "to": 131, "width": 0.1}, {"from": 63, "to": 101, "width": 0.1}, {"from": 64, "to": 128, "width": 0.1}, {"from": 65, "to": 133, "width": 0.1}, {"from": 66, "to": 112, "width": 0.1}, {"from": 66, "to": 121, "width": 0.1}, {"from": 67, "to": 70, "width": 0.1}, {"from": 67, "to": 104, "width": 0.1}, {"from": 68, "to": 80, "width": 0.1}, {"from": 68, "to": 88, "width": 0.1}, {"from": 68, "to": 100, "width": 0.1}, {"from": 68, "to": 104, "width": 0.1}, {"from": 68, "to": 119, "width": 0.1}, {"from": 68, "to": 133, "width": 0.1}, {"from": 71, "to": 97, "width": 0.1}, {"from": 71, "to": 98, "width": 0.1}, {"from": 71, "to": 110, "width": 0.1}, {"from": 71, "to": 121, "width": 0.1}, {"from": 72, "to": 110, "width": 0.1}, {"from": 74, "to": 80, "width": 0.1}, {"from": 74, "to": 84, "width": 0.1}, {"from": 74, "to": 117, "width": 0.1}, {"from": 74, "to": 122, "width": 0.1}, {"from": 76, "to": 116, "width": 0.1}, {"from": 76, "to": 123, "width": 0.1}, {"from": 80, "to": 97, "width": 0.1}, {"from": 80, "to": 99, "width": 0.1}, {"from": 82, "to": 117, "width": 0.1}, {"from": 84, "to": 121, "width": 0.1}, {"from": 84, "to": 122, "width": 0.1}, {"from": 85, "to": 91, "width": 0.1}, {"from": 85, "to": 117, "width": 0.1}, {"from": 85, "to": 118, "width": 0.1}, {"from": 85, "to": 122, "width": 0.1}, {"from": 88, "to": 118, "width": 0.1}, {"from": 97, "to": 98, "width": 0.1}, {"from": 98, "to": 110, "width": 0.1}, {"from": 98, "to": 121, "width": 0.1}, {"from": 99, "to": 103, "width": 0.1}, {"from": 99, "to": 119, "width": 0.1}, {"from": 100, "to": 122, "width": 0.1}, {"from": 104, "to": 133, "width": 0.1}, {"from": 108, "to": 121, "width": 0.1}, {"from": 108, "to": 122, "width": 0.1}, {"from": 109, "to": 110, "width": 0.1}, {"from": 114, "to": 115, "width": 0.1}, {"from": 116, "to": 122, "width": 0.1}, {"from": 116, "to": 123, "width": 0.1}, {"from": 117, "to": 118, "width": 0.1}, {"from": 129, "to": 136, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

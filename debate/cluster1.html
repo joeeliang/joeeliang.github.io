@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THR the narrative that long-term relationships (e.g. familial, platonic, romantic) are more valuable", "shape": "dot", "size": 10, "title": "THR the narrative that long-term relationships (e.g. familial, platonic, romantic) are more valuable"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THO the expectation in comitted romantic relationships that they are long-term", "shape": "dot", "size": 10, "title": "THO the expectation in comitted romantic relationships that they are long-term"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THR the narrative that people should not enter into romantic relationships that they don\u0027t anticipate to be sustainable into the long term", "shape": "dot", "size": 10, "title": "THR the narrative that people should not enter into romantic relationships that they don\u0027t anticipate to be sustainable into the long term"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THP to live in a world where most individuals lead polyamorous relationships, as opposed to single-partner relationships", "shape": "dot", "size": 10, "title": "THP to live in a world where most individuals lead polyamorous relationships, as opposed to single-partner relationships"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THBT gay and lesbian communities should actively advocate against the idealization of monogamous romantic relationships", "shape": "dot", "size": 10, "title": "THBT gay and lesbian communities should actively advocate against the idealization of monogamous romantic relationships"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "THBT it is preferable to be single, than pursuing a successful long-term monogamous relationship", "shape": "dot", "size": 10, "title": "THBT it is preferable to be single, than pursuing a successful long-term monogamous relationship"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THP a world where all romantic relationships are consensually polyamorous", "shape": "dot", "size": 10, "title": "THP a world where all romantic relationships are consensually polyamorous"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "Assuming its full and effective enforcement, THBT liberal democracies should require licenses for individuals to engage in romantic relationships", "shape": "dot", "size": 10, "title": "Assuming its full and effective enforcement, THBT liberal democracies should require licenses for individuals to engage in romantic relationships"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THR the dominant narrative that individuals should \"do what they love\".", "shape": "dot", "size": 10, "title": "THR the dominant narrative that individuals should \"do what they love\"."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THR the narrative that you need to truly love yourself in order to love others", "shape": "dot", "size": 10, "title": "THR the narrative that you need to truly love yourself in order to love others"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THR the narrative that one must \"do what they love\"", "shape": "dot", "size": 10, "title": "THR the narrative that one must \"do what they love\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "This house prefers a world where romantic love is not the primary consideration in a marriage", "shape": "dot", "size": 10, "title": "This house prefers a world where romantic love is not the primary consideration in a marriage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "TH prefers a world where romantic love is not the primary consideration in a marriage", "shape": "dot", "size": 10, "title": "TH prefers a world where romantic love is not the primary consideration in a marriage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "This House prefers a world where people do not enter romantic relationships before they turn 18.", "shape": "dot", "size": 10, "title": "This House prefers a world where people do not enter romantic relationships before they turn 18."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THR the norm of societal association between sex and romantic love.", "shape": "dot", "size": 10, "title": "THR the norm of societal association between sex and romantic love."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THP a world where sexual compatibility is prioritized over emotional compatibility in relationships", "shape": "dot", "size": 10, "title": "THP a world where sexual compatibility is prioritized over emotional compatibility in relationships"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THP a world where all romantic relationships are arranged by the \"Relationship Algorithm\"", "shape": "dot", "size": 10, "title": "THP a world where all romantic relationships are arranged by the \"Relationship Algorithm\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THR the emphasis placed on sexual acts/intercourse in determining one\u0027s sexual orientation within the LGBTIQIA+ community", "shape": "dot", "size": 10, "title": "THR the emphasis placed on sexual acts/intercourse in determining one\u0027s sexual orientation within the LGBTIQIA+ community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THR the narrative that marrying someone with similar socio-economic background is necessary for a successful marriage", "shape": "dot", "size": 10, "title": "THR the narrative that marrying someone with similar socio-economic background is necessary for a successful marriage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "TH, as the woman, would commit to not engage in romantic relationships", "shape": "dot", "size": 10, "title": "TH, as the woman, would commit to not engage in romantic relationships"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THW Prefer To Live In A World Where Everyone Is Born With A Fluid Sexuality", "shape": "dot", "size": 10, "title": "THW Prefer To Live In A World Where Everyone Is Born With A Fluid Sexuality"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THS the phenomenon of Green Card marriages", "shape": "dot", "size": 10, "title": "THS the phenomenon of Green Card marriages"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "There exists a device that can ensure its user does not ever experience romantic love again. This process is irreversible. THW allow consenting adults to use the device on themselves.", "shape": "dot", "size": 10, "title": "There exists a device that can ensure its user does not ever experience romantic love again. This process is irreversible. THW allow consenting adults to use the device on themselves."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THR the glorification of the institution of marriage", "shape": "dot", "size": 10, "title": "THR the glorification of the institution of marriage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THW no longer grant legal privileges to married couples solely because of their marital status (e.g. marital tax deduction, joint filing tax benefits, health insurance benefits, immigration beneifts, etc.)", "shape": "dot", "size": 10, "title": "THW no longer grant legal privileges to married couples solely because of their marital status (e.g. marital tax deduction, joint filing tax benefits, health insurance benefits, immigration beneifts, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THR the dominant narrative that loyalty is a virtue", "shape": "dot", "size": 10, "title": "THR the dominant narrative that loyalty is a virtue"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THBT individuals with same-sex attraction who are open about their sexual orientaton should be reluctant to date closeted individuals", "shape": "dot", "size": 10, "title": "THBT individuals with same-sex attraction who are open about their sexual orientaton should be reluctant to date closeted individuals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THW prefer if personal identity was conceptionalised as relational instead of atomised", "shape": "dot", "size": 10, "title": "THW prefer if personal identity was conceptionalised as relational instead of atomised"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "That, as the queer (LGBTQIA+) community, we would reject the \u2018born this way\u2019 narrative.", "shape": "dot", "size": 10, "title": "That, as the queer (LGBTQIA+) community, we would reject the \u2018born this way\u2019 narrative."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THR the romanticizaion of motherhood", "shape": "dot", "size": 10, "title": "THR the romanticizaion of motherhood"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THR the concept of undonditional love", "shape": "dot", "size": 10, "title": "THR the concept of undonditional love"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THO all media and literature that romanticizes mental illness", "shape": "dot", "size": 10, "title": "THO all media and literature that romanticizes mental illness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "As someone who is in a healthy fling with someone else, but not sexually satisfied, THW ghost instead of breaking up", "shape": "dot", "size": 10, "title": "As someone who is in a healthy fling with someone else, but not sexually satisfied, THW ghost instead of breaking up"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THR the narrative that family love should be unconditional", "shape": "dot", "size": 10, "title": "THR the narrative that family love should be unconditional"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THW prefer not to be born than to live a deeply immoral yet pleasurable life", "shape": "dot", "size": 10, "title": "THW prefer not to be born than to live a deeply immoral yet pleasurable life"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "In a world where realistic android relationships are possible, THS the rise of relationships with realistic androids", "shape": "dot", "size": 10, "title": "In a world where realistic android relationships are possible, THS the rise of relationships with realistic androids"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "Regardless of whether or not sexual identity is a choice, TH regrets the born this way narrative", "shape": "dot", "size": 10, "title": "Regardless of whether or not sexual identity is a choice, TH regrets the born this way narrative"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "A \u2018sham marriage\u2019 (also known as xinghun or co-operative marriage) is a marriage between a gay man and a lesbian woman for the purposes of creating the appearance of being straight and evading the social stigmas of being gay or being \u2018left on the shelf\u2019. They are particularly common in China. That, as a homosexual person in China, would enter into a sham marriage.", "shape": "dot", "size": 10, "title": "A \u2018sham marriage\u2019 (also known as xinghun or co-operative marriage) is a marriage between a gay man and a lesbian woman for the purposes of creating the appearance of being straight and evading the social stigmas of being gay or being \u2018left on the shelf\u2019. They are particularly common in China. That, as a homosexual person in China, would enter into a sham marriage."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THBT it is justified for women to lie about their relationship status and future plans during job interviews", "shape": "dot", "size": 10, "title": "THBT it is justified for women to lie about their relationship status and future plans during job interviews"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "You are a woman in a healthy non-abusive long-term relationship with a man. You make a stable salary with which you can support yourself. Your partner has/makes significantly(ridiculously) more money than you. THW Let him pay for the vast majority of expenses incurred during your relationship", "shape": "dot", "size": 10, "title": "You are a woman in a healthy non-abusive long-term relationship with a man. You make a stable salary with which you can support yourself. Your partner has/makes significantly(ridiculously) more money than you. THW Let him pay for the vast majority of expenses incurred during your relationship"}]);
+                  edges = new vis.DataSet([{"from": 1, "to": 14, "width": 0.1}, {"from": 1, "to": 16, "width": 0.1}, {"from": 4, "to": 8, "width": 0.1}, {"from": 4, "to": 33, "width": 0.1}, {"from": 4, "to": 36, "width": 0.1}, {"from": 5, "to": 8, "width": 0.1}, {"from": 8, "to": 36, "width": 0.1}, {"from": 13, "to": 20, "width": 0.1}, {"from": 13, "to": 26, "width": 0.1}, {"from": 15, "to": 29, "width": 0.1}, {"from": 15, "to": 38, "width": 0.1}, {"from": 19, "to": 29, "width": 0.1}, {"from": 20, "to": 26, "width": 0.1}, {"from": 29, "to": 36, "width": 0.1}, {"from": 31, "to": 36, "width": 0.1}, {"from": 36, "to": 37, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

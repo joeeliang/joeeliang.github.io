@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THBT the LGBTIQIA+ community should actively encourage non-hetero individuals in conservative countries to live dual identities", "shape": "dot", "size": 10, "title": "THBT the LGBTIQIA+ community should actively encourage non-hetero individuals in conservative countries to live dual identities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "As LGBTQIA+ community in conservative areas, THW discourage our opened identity member from having relationship with closeted individuals", "shape": "dot", "size": 10, "title": "As LGBTQIA+ community in conservative areas, THW discourage our opened identity member from having relationship with closeted individuals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THBT LGBTQIA+ movements should be exclusively led by LGBTQIA+ individuals from working-class backgrounds.", "shape": "dot", "size": 10, "title": "THBT LGBTQIA+ movements should be exclusively led by LGBTQIA+ individuals from working-class backgrounds."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "In countries dominated by conservative political parties, THBT movements should prioritize grassroots organizing (outreach, education, local funding, scholarships, community spaces) as opposed to advocating for political change", "shape": "dot", "size": 10, "title": "In countries dominated by conservative political parties, THBT movements should prioritize grassroots organizing (outreach, education, local funding, scholarships, community spaces) as opposed to advocating for political change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "This house believes that progressive social movements in developing countries should prioritise campaigning for changes to official laws and governmental policies over changes in mass attitudes and beliefs.", "shape": "dot", "size": 10, "title": "This house believes that progressive social movements in developing countries should prioritise campaigning for changes to official laws and governmental policies over changes in mass attitudes and beliefs."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THR the emphasis on sex and sexual acts in the LGBTQIA+ community", "shape": "dot", "size": 10, "title": "THR the emphasis on sex and sexual acts in the LGBTQIA+ community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THR the prominence of declaring one\u0027s sexual orientation (EG national coming out Day) as a tactic for acceptance by the LGBT community", "shape": "dot", "size": 10, "title": "THR the prominence of declaring one\u0027s sexual orientation (EG national coming out Day) as a tactic for acceptance by the LGBT community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "TH, as the LGBTQ+ community, supports Queer baiting", "shape": "dot", "size": 10, "title": "TH, as the LGBTQ+ community, supports Queer baiting"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THBT progressive social movements in India (e.g. feminist or LGBTQ+ movement) should strongly distance themselves from the West (e.g by not accepting funding, not exchanging information, or heavily emphasising their cultural specifity)", "shape": "dot", "size": 10, "title": "THBT progressive social movements in India (e.g. feminist or LGBTQ+ movement) should strongly distance themselves from the West (e.g by not accepting funding, not exchanging information, or heavily emphasising their cultural specifity)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THBT Queer movements in the developing world Should attempt to dissociate themselves from modern Queer movements in the west", "shape": "dot", "size": 10, "title": "THBT Queer movements in the developing world Should attempt to dissociate themselves from modern Queer movements in the west"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THBT progressive social movements should primarily use class consciousness as a rallying mechanism, rather than focusing on racial identity", "shape": "dot", "size": 10, "title": "THBT progressive social movements should primarily use class consciousness as a rallying mechanism, rather than focusing on racial identity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THBT contemporary social movements should focus on class differences rather than on identity-based differences (gender, race, religion etc.)", "shape": "dot", "size": 10, "title": "THBT contemporary social movements should focus on class differences rather than on identity-based differences (gender, race, religion etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "This House believes that contemporary social movements should focus on class differences rather than on identity-based discrimination (e.g. gender, race)", "shape": "dot", "size": 10, "title": "This House believes that contemporary social movements should focus on class differences rather than on identity-based discrimination (e.g. gender, race)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "THBT identity groups within the feminist movement (e.g. the trans community, black feminists, etc) should lobby and campaign as independent movements rather than together as a single movement", "shape": "dot", "size": 10, "title": "THBT identity groups within the feminist movement (e.g. the trans community, black feminists, etc) should lobby and campaign as independent movements rather than together as a single movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THP leadership social movements over ones with leaders", "shape": "dot", "size": 10, "title": "THP leadership social movements over ones with leaders"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THR the modern idealisation of social movement leaders as moderate, pacifist and respectable e.g. Nelson Mandela, the Dalai Lama, Rosa Parks", "shape": "dot", "size": 10, "title": "THR the modern idealisation of social movement leaders as moderate, pacifist and respectable e.g. Nelson Mandela, the Dalai Lama, Rosa Parks"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THP leaderless movements", "shape": "dot", "size": 10, "title": "THP leaderless movements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "This House believes that progressive activists in conservative societies should aggressively adopt conservative language/rhetoric in advocating for their agenda.", "shape": "dot", "size": 10, "title": "This House believes that progressive activists in conservative societies should aggressively adopt conservative language/rhetoric in advocating for their agenda."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THBT the BLM movement should campaign for the inclusion of more African American police officers instead of the abolition of the police force", "shape": "dot", "size": 10, "title": "THBT the BLM movement should campaign for the inclusion of more African American police officers instead of the abolition of the police force"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THBT the Black Lives Matter(BLM) movement should campaign for the inclusion of more African American police officers instead of the defunding of the police force", "shape": "dot", "size": 10, "title": "THBT the Black Lives Matter(BLM) movement should campaign for the inclusion of more African American police officers instead of the defunding of the police force"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "THS Black rights movements in the West\u0027s strategy of actively campaigning to defund the police instead of pushing for institutional reforms", "shape": "dot", "size": 10, "title": "THS Black rights movements in the West\u0027s strategy of actively campaigning to defund the police instead of pushing for institutional reforms"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "As Black Lives Matter Movement, THW reject any form of participation from the police force within their protest activities", "shape": "dot", "size": 10, "title": "As Black Lives Matter Movement, THW reject any form of participation from the police force within their protest activities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THBT activists from disadvantaged communities should adopt respectability politics", "shape": "dot", "size": 10, "title": "THBT activists from disadvantaged communities should adopt respectability politics"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "That, as minorities, we would engage in respectability politics", "shape": "dot", "size": 10, "title": "That, as minorities, we would engage in respectability politics"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THO the use of shaming as a practice by activists", "shape": "dot", "size": 10, "title": "THO the use of shaming as a practice by activists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THS the use of shaming to advance social causes", "shape": "dot", "size": 10, "title": "THS the use of shaming to advance social causes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THS the shaming of individuals as a tactic for social movements to catalyse change (e.g. shaming individuals for not taking environmentally sustainable actions, shaming individuals for violating lockdown/quarantine policies)", "shape": "dot", "size": 10, "title": "THS the shaming of individuals as a tactic for social movements to catalyse change (e.g. shaming individuals for not taking environmentally sustainable actions, shaming individuals for violating lockdown/quarantine policies)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THBT in countries where the LGBT+ movement has secured significant gains for its community, pride marches should focus on directing anger towards continuing injustices rather than celebrating progress already made.", "shape": "dot", "size": 10, "title": "THBT in countries where the LGBT+ movement has secured significant gains for its community, pride marches should focus on directing anger towards continuing injustices rather than celebrating progress already made."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "That the LGBTQ+ movement should not allow police officers at pride events (such as the pride march).", "shape": "dot", "size": 10, "title": "That the LGBTQ+ movement should not allow police officers at pride events (such as the pride march)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "In Western Liberal democracies, THR the queer movement\u0027s primary form of collectivization transitioning from riots/protests into pride celebrations/parades", "shape": "dot", "size": 10, "title": "In Western Liberal democracies, THR the queer movement\u0027s primary form of collectivization transitioning from riots/protests into pride celebrations/parades"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "Th, as the LGBTQ+ movement, regrets the advocacy strategy of strongly encouraging people to declare their sexual orientation (e.g: national coming out day)", "shape": "dot", "size": 10, "title": "Th, as the LGBTQ+ movement, regrets the advocacy strategy of strongly encouraging people to declare their sexual orientation (e.g: national coming out day)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THBT gender and sexual minority groups (feminist and LGBTQIA+) should ensure that decision making and representation for their cause is done by members of the minority group and limit the advocacy of allies to support and mass action (such as protests and petitions)", "shape": "dot", "size": 10, "title": "THBT gender and sexual minority groups (feminist and LGBTQIA+) should ensure that decision making and representation for their cause is done by members of the minority group and limit the advocacy of allies to support and mass action (such as protests and petitions)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "THBT minority groups should advocate for the widespread use of their cultural practices in society as opposed to defending it from cultural appropriation", "shape": "dot", "size": 10, "title": "THBT minority groups should advocate for the widespread use of their cultural practices in society as opposed to defending it from cultural appropriation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "In places where minority members are greatly oppressed by the majority, as a minority individual TH would choose to adopt the majority culture, language, and dress", "shape": "dot", "size": 10, "title": "In places where minority members are greatly oppressed by the majority, as a minority individual TH would choose to adopt the majority culture, language, and dress"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THBT members of a minority group should oppose popular media that innacurately portrays the culture, struggles or history of traditionally marginalised groups (i.e. Hamilton, Mulan)", "shape": "dot", "size": 10, "title": "THBT members of a minority group should oppose popular media that innacurately portrays the culture, struggles or history of traditionally marginalised groups (i.e. Hamilton, Mulan)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "THBT post-conflict societies should construct a national identity around a shared ethnicity, as opposed to a common culture", "shape": "dot", "size": 10, "title": "THBT post-conflict societies should construct a national identity around a shared ethnicity, as opposed to a common culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "THBT social movements should adopt an incrementalist strategy as opposed to pushing for revolutionary change", "shape": "dot", "size": 10, "title": "THBT social movements should adopt an incrementalist strategy as opposed to pushing for revolutionary change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THP a world where radical revolutionaries (Malcolm X, Bhagat Singh) are celebrated over peaceful revolutionaries (Mahatma Gandhi, MLK Jr)", "shape": "dot", "size": 10, "title": "THP a world where radical revolutionaries (Malcolm X, Bhagat Singh) are celebrated over peaceful revolutionaries (Mahatma Gandhi, MLK Jr)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "THP a world where the legacies of radical revolutionaries are glorified over the legacies of peaceful revolutionaries", "shape": "dot", "size": 10, "title": "THP a world where the legacies of radical revolutionaries are glorified over the legacies of peaceful revolutionaries"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "That activist movements should embrace cancel culture as a tool to promote social change.", "shape": "dot", "size": 10, "title": "That activist movements should embrace cancel culture as a tool to promote social change."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "That we regret cancel culture within progressive movements", "shape": "dot", "size": 10, "title": "That we regret cancel culture within progressive movements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "This House Regrets cancel culture within progressive movements", "shape": "dot", "size": 10, "title": "This House Regrets cancel culture within progressive movements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "That we regret the emphasis placed on individual rights by social justice movements.", "shape": "dot", "size": 10, "title": "That we regret the emphasis placed on individual rights by social justice movements."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "THBT local queer activist groups should aggressively push for the redefinition of Hijras as ordinary individuals with no unique supernatural powers", "shape": "dot", "size": 10, "title": "THBT local queer activist groups should aggressively push for the redefinition of Hijras as ordinary individuals with no unique supernatural powers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "This house regrets the dominant narrative that mainstream social movements should refrain from being antagonistic and aggressive, in pushing for changes/fighting against injustice", "shape": "dot", "size": 10, "title": "This house regrets the dominant narrative that mainstream social movements should refrain from being antagonistic and aggressive, in pushing for changes/fighting against injustice"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THR the use of language that dismisses activists based on their sacrifice (ie: \"protest tourists\"; \"performative allyship\")", "shape": "dot", "size": 10, "title": "THR the use of language that dismisses activists based on their sacrifice (ie: \"protest tourists\"; \"performative allyship\")"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT Mahatma Gandhi\u0027s legacy has done more harm than good to the political discourse of South Asia", "shape": "dot", "size": 10, "title": "THBT Mahatma Gandhi\u0027s legacy has done more harm than good to the political discourse of South Asia"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "This House Believes That youth-based political parties in developing countries should include the fight for queer rights in its manifesto", "shape": "dot", "size": 10, "title": "This House Believes That youth-based political parties in developing countries should include the fight for queer rights in its manifesto"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THBT ethnic communities should not shame their members for being \u2018white-washed\u2019", "shape": "dot", "size": 10, "title": "THBT ethnic communities should not shame their members for being \u2018white-washed\u2019"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THBT protest movements should actively integrate religious figures and institutions in opposition to authoritarian regimes", "shape": "dot", "size": 10, "title": "THBT protest movements should actively integrate religious figures and institutions in opposition to authoritarian regimes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THR the decline in solidarity strikes", "shape": "dot", "size": 10, "title": "THR the decline in solidarity strikes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THR that leftist movements/organisations in Southeast Asia transitioned to political parties. (Examples include but are not limited to: Parti Sosialis Malaysia, Makabayan Blok in the Philippines, and RC in Indonesia)", "shape": "dot", "size": 10, "title": "THR that leftist movements/organisations in Southeast Asia transitioned to political parties. (Examples include but are not limited to: Parti Sosialis Malaysia, Makabayan Blok in the Philippines, and RC in Indonesia)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THP activist messaging to focus on how things could be (a positive vision for the future) rather than on how things are (how bad things are currently)", "shape": "dot", "size": 10, "title": "THP activist messaging to focus on how things could be (a positive vision for the future) rather than on how things are (how bad things are currently)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THR the Americanization of social justice debates, e.g. focus on police brutality as a result of BLM, use of english terms by social movements rather than words in local languages and the focus on American icons such as MLK or RBG", "shape": "dot", "size": 10, "title": "THR the Americanization of social justice debates, e.g. focus on police brutality as a result of BLM, use of english terms by social movements rather than words in local languages and the focus on American icons such as MLK or RBG"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THR the increasing emphasis upon publicity and performative expressivism in social movements.", "shape": "dot", "size": 10, "title": "THR the increasing emphasis upon publicity and performative expressivism in social movements."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "This House Believes That leaders of marginalized minority groups should urge their respective communities to partake in greater social integration at the expense of sustaining unique cultural attributes.", "shape": "dot", "size": 10, "title": "This House Believes That leaders of marginalized minority groups should urge their respective communities to partake in greater social integration at the expense of sustaining unique cultural attributes."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THP a political culture where opposing politicians treat each other with hostility (e.g. not publicly fraternizing, making directly attacking remarks)", "shape": "dot", "size": 10, "title": "THP a political culture where opposing politicians treat each other with hostility (e.g. not publicly fraternizing, making directly attacking remarks)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THBT Thailand protesters should escalate their actions to become violent.", "shape": "dot", "size": 10, "title": "THBT Thailand protesters should escalate their actions to become violent."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "As a progressive movement, (e.g. Feminists, LGBT+ movements), THW not celebrate our members entering traditionally anti-progressive institutions (i.e Military, Police Force, Conservative Political Parties)", "shape": "dot", "size": 10, "title": "As a progressive movement, (e.g. Feminists, LGBT+ movements), THW not celebrate our members entering traditionally anti-progressive institutions (i.e Military, Police Force, Conservative Political Parties)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THR social progressives using large generalisations in their campaigning (all Trump supporters are racist, all men are trash, all cops are bastards)", "shape": "dot", "size": 10, "title": "THR social progressives using large generalisations in their campaigning (all Trump supporters are racist, all men are trash, all cops are bastards)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THBT the media should be held responsible for civic decline", "shape": "dot", "size": 10, "title": "THBT the media should be held responsible for civic decline"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THBT Indonesian workers are justified in using in-person tactics (eg: large public gatherings, protests, picketing) to protest the Omnibus Law during the pandemic", "shape": "dot", "size": 10, "title": "THBT Indonesian workers are justified in using in-person tactics (eg: large public gatherings, protests, picketing) to protest the Omnibus Law during the pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "TH Opposes the depiction of individual struggle as a source of empowerment (e.g. cancer patient in chemo, feminist in conservative country, BLM in the US)", "shape": "dot", "size": 10, "title": "TH Opposes the depiction of individual struggle as a source of empowerment (e.g. cancer patient in chemo, feminist in conservative country, BLM in the US)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THS the Extinction Rebellion Movement", "shape": "dot", "size": 10, "title": "THS the Extinction Rebellion Movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THP centralised over decentralised forms of civil rights activism", "shape": "dot", "size": 10, "title": "THP centralised over decentralised forms of civil rights activism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "As citizens concerned with social justice, TH prefers forwarding Marxists\u0027 school of thought that emphasizes on material inequality as a primary source of oppression, rather than intersectionality concept in which identities like race, religion, and sexuality majorly affect them", "shape": "dot", "size": 10, "title": "As citizens concerned with social justice, TH prefers forwarding Marxists\u0027 school of thought that emphasizes on material inequality as a primary source of oppression, rather than intersectionality concept in which identities like race, religion, and sexuality majorly affect them"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THBT governments with long history of racial segregation (i.e. South Africa, the U.S.) should accelerate the creation of a post-racial state (e.g.: incentivizing interracial marriage, subsidizing multiethnic housing)", "shape": "dot", "size": 10, "title": "THBT governments with long history of racial segregation (i.e. South Africa, the U.S.) should accelerate the creation of a post-racial state (e.g.: incentivizing interracial marriage, subsidizing multiethnic housing)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "This House, as self-proclaimed progressive entertainers (artists, comedian, etc), would speak out against the rise of political correctness culture", "shape": "dot", "size": 10, "title": "This House, as self-proclaimed progressive entertainers (artists, comedian, etc), would speak out against the rise of political correctness culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "TH would march and encourage others to continue the violent protest against the omnibus law until the president issues a decree to postpone and revise the bill.", "shape": "dot", "size": 10, "title": "TH would march and encourage others to continue the violent protest against the omnibus law until the president issues a decree to postpone and revise the bill."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THBT historically discriminated groups should abandon narratives of historical redress in their campaign for equality.", "shape": "dot", "size": 10, "title": "THBT historically discriminated groups should abandon narratives of historical redress in their campaign for equality."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THS a grass roots movement to Boycott China", "shape": "dot", "size": 10, "title": "THS a grass roots movement to Boycott China"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THR the rise of celebrities and artists openly supporting politicians", "shape": "dot", "size": 10, "title": "THR the rise of celebrities and artists openly supporting politicians"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THS the use of aggressive and inflammatory rhetoric in response to right wing ideology", "shape": "dot", "size": 10, "title": "THS the use of aggressive and inflammatory rhetoric in response to right wing ideology"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THS local movements in Asia adopting western terminology and strategies to push the cause forward", "shape": "dot", "size": 10, "title": "THS local movements in Asia adopting western terminology and strategies to push the cause forward"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THS the Animal Liberation Front", "shape": "dot", "size": 10, "title": "THS the Animal Liberation Front"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THBT social movements should prioritize calling-in problematic inividuals and behaviours rather than calling them out", "shape": "dot", "size": 10, "title": "THBT social movements should prioritize calling-in problematic inividuals and behaviours rather than calling them out"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THS movements that advocate for the provision of negative rights to sentient AI", "shape": "dot", "size": 10, "title": "THS movements that advocate for the provision of negative rights to sentient AI"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "TH opposes the derogatory usage of the inherent identity characteristics of dominant groups - e.g. \"You\u0027re so white.\", \"Man Tears\", \"ugh such a Karen\".", "shape": "dot", "size": 10, "title": "TH opposes the derogatory usage of the inherent identity characteristics of dominant groups - e.g. \"You\u0027re so white.\", \"Man Tears\", \"ugh such a Karen\"."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "That Western companies with a significant number of employees from the Indian diaspora should actively campaign against the caste system.", "shape": "dot", "size": 10, "title": "That Western companies with a significant number of employees from the Indian diaspora should actively campaign against the caste system."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THW attend the Queer Liberation March rather than the Stonewall 50 March", "shape": "dot", "size": 10, "title": "THW attend the Queer Liberation March rather than the Stonewall 50 March"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THS the illegal removal of statues of popular historical figures by social justice movements who consider them to be offensive (e.g statues of Winston Churchill in the UK, of Sukarno in Indonesia, etc)", "shape": "dot", "size": 10, "title": "THS the illegal removal of statues of popular historical figures by social justice movements who consider them to be offensive (e.g statues of Winston Churchill in the UK, of Sukarno in Indonesia, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THR Breadtubers\u0027 prioritisation of trying to de-radicalise alt-righters", "shape": "dot", "size": 10, "title": "THR Breadtubers\u0027 prioritisation of trying to de-radicalise alt-righters"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "THBT social movements should focus on publicly shaming corporations to change business practices rather than trying to achieve these outcomes through legislative action", "shape": "dot", "size": 10, "title": "THBT social movements should focus on publicly shaming corporations to change business practices rather than trying to achieve these outcomes through legislative action"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THBT oppressed minority groups should pursue violent resistance (i.e. rioting) as opposed to peaceful protest when seeking reform.", "shape": "dot", "size": 10, "title": "THBT oppressed minority groups should pursue violent resistance (i.e. rioting) as opposed to peaceful protest when seeking reform."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THS the rise of teenagers at the forefront of social movements (e.g. Gretta Thunberg, Malala Yousafzai, the Parkland students).", "shape": "dot", "size": 10, "title": "THS the rise of teenagers at the forefront of social movements (e.g. Gretta Thunberg, Malala Yousafzai, the Parkland students)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "THR the rise of ideological purity policing", "shape": "dot", "size": 10, "title": "THR the rise of ideological purity policing"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "This House Believes That minorities should not attempt to reclaim slurs that have been directed against them", "shape": "dot", "size": 10, "title": "This House Believes That minorities should not attempt to reclaim slurs that have been directed against them"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "THR the characterization of large scale policy reforms against social vices as wars For example --\u2018combating\u2019", "shape": "dot", "size": 10, "title": "THR the characterization of large scale policy reforms against social vices as wars For example --\u2018combating\u2019"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THR violent protests", "shape": "dot", "size": 10, "title": "THR violent protests"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "In the aftermath of the COVID-19 Outbreak, THBT Western liberal democracies/governments should actively promote the narrative that individuals ought to sacrifice/make sacrifices for the collective community", "shape": "dot", "size": 10, "title": "In the aftermath of the COVID-19 Outbreak, THBT Western liberal democracies/governments should actively promote the narrative that individuals ought to sacrifice/make sacrifices for the collective community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "THBT movements should not use civil disobedience as a strategy to achieve their goals", "shape": "dot", "size": 10, "title": "THBT movements should not use civil disobedience as a strategy to achieve their goals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "TH supports the creation of groups similar to Gulabi Gang in Latin America", "shape": "dot", "size": 10, "title": "TH supports the creation of groups similar to Gulabi Gang in Latin America"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THW grant amnesty to dissidents of violent political movements in exchange for removing their right to vote or run for public offices in elections (e.g. the integration of FARC in Colombia)\"", "shape": "dot", "size": 10, "title": "THW grant amnesty to dissidents of violent political movements in exchange for removing their right to vote or run for public offices in elections (e.g. the integration of FARC in Colombia)\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "THS authoritarian reformers in newly formed states. (Eg: Lee Kuan Yew, Castro, etc)", "shape": "dot", "size": 10, "title": "THS authoritarian reformers in newly formed states. (Eg: Lee Kuan Yew, Castro, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "That we should abolish the \"right to silence\"", "shape": "dot", "size": 10, "title": "That we should abolish the \"right to silence\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "THBT social justice movements should not actively try to appeal to allies (e.g. the feminist movement deliberately trying to appeal to men, or the LGBT+ movement to straight cis individuals).", "shape": "dot", "size": 10, "title": "THBT social justice movements should not actively try to appeal to allies (e.g. the feminist movement deliberately trying to appeal to men, or the LGBT+ movement to straight cis individuals)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "TH, as progressive student movements in Pakistan, would publicly ally themselves with progressive student movements in India", "shape": "dot", "size": 10, "title": "TH, as progressive student movements in Pakistan, would publicly ally themselves with progressive student movements in India"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "Assuming support from international activists, THBT indigenous groups should advocate for a boycott, divestment, and sanctions movement against Canada to fight its ongoing discrimination against Indigenous peoples", "shape": "dot", "size": 10, "title": "Assuming support from international activists, THBT indigenous groups should advocate for a boycott, divestment, and sanctions movement against Canada to fight its ongoing discrimination against Indigenous peoples"}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 19, "width": 0.1}, {"from": 0, "to": 40, "width": 0.1}, {"from": 2, "to": 82, "width": 0.1}, {"from": 5, "to": 38, "width": 0.1}, {"from": 5, "to": 75, "width": 0.1}, {"from": 6, "to": 66, "width": 0.1}, {"from": 8, "to": 14, "width": 0.1}, {"from": 8, "to": 60, "width": 0.1}, {"from": 8, "to": 70, "width": 0.1}, {"from": 10, "to": 39, "width": 0.1}, {"from": 10, "to": 48, "width": 0.1}, {"from": 12, "to": 82, "width": 0.1}, {"from": 14, "to": 60, "width": 0.1}, {"from": 14, "to": 70, "width": 0.1}, {"from": 19, "to": 38, "width": 0.1}, {"from": 19, "to": 75, "width": 0.1}, {"from": 29, "to": 46, "width": 0.1}, {"from": 29, "to": 67, "width": 0.1}, {"from": 29, "to": 78, "width": 0.1}, {"from": 30, "to": 64, "width": 0.1}, {"from": 35, "to": 49, "width": 0.1}, {"from": 35, "to": 61, "width": 0.1}, {"from": 37, "to": 47, "width": 0.1}, {"from": 37, "to": 58, "width": 0.1}, {"from": 38, "to": 52, "width": 0.1}, {"from": 40, "to": 70, "width": 0.1}, {"from": 40, "to": 77, "width": 0.1}, {"from": 41, "to": 45, "width": 0.1}, {"from": 41, "to": 55, "width": 0.1}, {"from": 41, "to": 88, "width": 0.1}, {"from": 46, "to": 67, "width": 0.1}, {"from": 46, "to": 78, "width": 0.1}, {"from": 49, "to": 61, "width": 0.1}, {"from": 56, "to": 82, "width": 0.1}, {"from": 57, "to": 85, "width": 0.1}, {"from": 60, "to": 70, "width": 0.1}, {"from": 62, "to": 83, "width": 0.1}, {"from": 62, "to": 93, "width": 0.1}, {"from": 65, "to": 83, "width": 0.1}, {"from": 66, "to": 92, "width": 0.1}, {"from": 67, "to": 78, "width": 0.1}, {"from": 70, "to": 77, "width": 0.1}, {"from": 82, "to": 87, "width": 0.1}, {"from": 83, "to": 93, "width": 0.1}, {"from": 87, "to": 93, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

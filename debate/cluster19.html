@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THW aggressively move away from tourism as a driver for \"economic growth\"", "shape": "dot", "size": 10, "title": "THW aggressively move away from tourism as a driver for \"economic growth\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THBT developing nations should strongly de-prioritise economic strategies which rely on tourism (e.g., no funding to pro-tourism advertisement, strict regulations and taxation for hospitality industry, strongly prioritising other sectors)", "shape": "dot", "size": 10, "title": "THBT developing nations should strongly de-prioritise economic strategies which rely on tourism (e.g., no funding to pro-tourism advertisement, strict regulations and taxation for hospitality industry, strongly prioritising other sectors)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THW abandon all tourism-reliant economic strategies", "shape": "dot", "size": 10, "title": "THW abandon all tourism-reliant economic strategies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THW anonymise all charitable donations", "shape": "dot", "size": 10, "title": "THW anonymise all charitable donations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THW prefer to donate to charities which provide cash transfers to low-income families to charities which direct spending towards specific causes or projects.", "shape": "dot", "size": 10, "title": "THW prefer to donate to charities which provide cash transfers to low-income families to charities which direct spending towards specific causes or projects."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "THBT philanthropists should donate to environmental protection as opposed to poverty alleviation", "shape": "dot", "size": 10, "title": "THBT philanthropists should donate to environmental protection as opposed to poverty alleviation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "THBT GOVERNMENTS SHOULD HAVE AUTONOMY TO DIVERT A PORTION OF CHARITY DONATIONS TO CHARITIES THEY DEEM TO BE MORE USEFUL/RELEVANT", "shape": "dot", "size": 10, "title": "THBT GOVERNMENTS SHOULD HAVE AUTONOMY TO DIVERT A PORTION OF CHARITY DONATIONS TO CHARITIES THEY DEEM TO BE MORE USEFUL/RELEVANT"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT foreign-based NGOs operating in countries with fragile democracies should cease efforts to push for political change (e.g. lobby for policy changes, re-education of the population, etc.) and instead focus solely on the provision of essential services on the ground (e.g. food drives, vaccinations, building livable communities, etc.)", "shape": "dot", "size": 10, "title": "THBT foreign-based NGOs operating in countries with fragile democracies should cease efforts to push for political change (e.g. lobby for policy changes, re-education of the population, etc.) and instead focus solely on the provision of essential services on the ground (e.g. food drives, vaccinations, building livable communities, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THBT individuals and NGOs in developed countries should focus their charitable efforts on causes outside their borders rather than local causes", "shape": "dot", "size": 10, "title": "THBT individuals and NGOs in developed countries should focus their charitable efforts on causes outside their borders rather than local causes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THS the use of voluntary human extinction as a strategy for environmentalism", "shape": "dot", "size": 10, "title": "THS the use of voluntary human extinction as a strategy for environmentalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THS the pursuit of voluntary human extinction as a strategy for environmentalism", "shape": "dot", "size": 10, "title": "THS the pursuit of voluntary human extinction as a strategy for environmentalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "TH, as Environmentalist, would abandon fear mongering tactic to convince society to join the movement", "shape": "dot", "size": 10, "title": "TH, as Environmentalist, would abandon fear mongering tactic to convince society to join the movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THBT the environmental movement should abandon the narrative of personal responsibility in favor of one which emphasizes institutional accountability", "shape": "dot", "size": 10, "title": "THBT the environmental movement should abandon the narrative of personal responsibility in favor of one which emphasizes institutional accountability"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "THBT the environmentalist movement should prioritise the anthropocentrist value of nature in its rhetoric", "shape": "dot", "size": 10, "title": "THBT the environmentalist movement should prioritise the anthropocentrist value of nature in its rhetoric"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "TH believes that the environmental movement should employ strategies that aim to abolish capitalism rather than to reform it", "shape": "dot", "size": 10, "title": "TH believes that the environmental movement should employ strategies that aim to abolish capitalism rather than to reform it"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THBT environmentalist groups should fully abandon advocating for the mitigation of climate change, in favour of campaigning for adaptation efforts instead (e.g. building sea walls, genetically modified crops, exploring alternative living habitats)", "shape": "dot", "size": 10, "title": "THBT environmentalist groups should fully abandon advocating for the mitigation of climate change, in favour of campaigning for adaptation efforts instead (e.g. building sea walls, genetically modified crops, exploring alternative living habitats)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THS the usage of citizen\u0027s assemblies to determine policies addressing climate change", "shape": "dot", "size": 10, "title": "THS the usage of citizen\u0027s assemblies to determine policies addressing climate change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THBT environmental movements should support climate engineering that fundamentally alters the environment in an attempt to combat global warming", "shape": "dot", "size": 10, "title": "THBT environmental movements should support climate engineering that fundamentally alters the environment in an attempt to combat global warming"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THBT any global revolution should first target institutions responsible for climate change.", "shape": "dot", "size": 10, "title": "THBT any global revolution should first target institutions responsible for climate change."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THBT the narrative that \"the scientific community will find a solution to climate change\" does more harm than good", "shape": "dot", "size": 10, "title": "THBT the narrative that \"the scientific community will find a solution to climate change\" does more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THBT the environmentalist movement should lobby for legislative change (e.g. emissions trading schemes, banning fracking) rather than individual action (e.g. recycling, reducing car usage)", "shape": "dot", "size": 10, "title": "THBT the environmentalist movement should lobby for legislative change (e.g. emissions trading schemes, banning fracking) rather than individual action (e.g. recycling, reducing car usage)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THR anthropocentrism in the environmental rights movement.", "shape": "dot", "size": 10, "title": "THR anthropocentrism in the environmental rights movement."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THBT environmental groups should pivot towards ecoterrorism as their primary mode of activism", "shape": "dot", "size": 10, "title": "THBT environmental groups should pivot towards ecoterrorism as their primary mode of activism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "That, as environmentalists, we would choose a strategy of working closely with corporations.", "shape": "dot", "size": 10, "title": "That, as environmentalists, we would choose a strategy of working closely with corporations."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "THBT environmental advocacy groups should prioritize lobbying governments to change environmental policies (e.g. Cap and trade, banning environmentally harmful chemicals) rather than convincing individuals to take responsibility for their own contribution to environmental damage (e.g. reducing / recycling waste, taking public transit)", "shape": "dot", "size": 10, "title": "THBT environmental advocacy groups should prioritize lobbying governments to change environmental policies (e.g. Cap and trade, banning environmentally harmful chemicals) rather than convincing individuals to take responsibility for their own contribution to environmental damage (e.g. reducing / recycling waste, taking public transit)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "THBT environmental movements should be pro-capitalism in their policies and advocacy (e.g., appealing to corporations for green policies, advocating for individual responsibility and sustainable consumption; rather than lobbying governments for extreme regulation, protesting for divestment)", "shape": "dot", "size": 10, "title": "THBT environmental movements should be pro-capitalism in their policies and advocacy (e.g., appealing to corporations for green policies, advocating for individual responsibility and sustainable consumption; rather than lobbying governments for extreme regulation, protesting for divestment)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "THBT, instead of attempting to mitigate the effect of climate change, states should re-divert all existing environmental funding to geoengineering projects.", "shape": "dot", "size": 10, "title": "THBT, instead of attempting to mitigate the effect of climate change, states should re-divert all existing environmental funding to geoengineering projects."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THBT space exploration should be carried out by private corporations instead of government", "shape": "dot", "size": 10, "title": "THBT space exploration should be carried out by private corporations instead of government"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THBT governments of developed countries should invest significantly in space exploration", "shape": "dot", "size": 10, "title": "THBT governments of developed countries should invest significantly in space exploration"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THBT governments in the developing world should limit migration to megacities", "shape": "dot", "size": 10, "title": "THBT governments in the developing world should limit migration to megacities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "THBT governments should financially incentivize people to move away from areas with few viable economic activities", "shape": "dot", "size": 10, "title": "THBT governments should financially incentivize people to move away from areas with few viable economic activities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THBT Central Banks should act to financially disempower and disincentivize practices that worsen climate change.", "shape": "dot", "size": 10, "title": "THBT Central Banks should act to financially disempower and disincentivize practices that worsen climate change."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THBT animal rights groups should focus their advocacy on creating a world where farmed animals are treated well and killed humanely, rather than on eradicating animal-based products", "shape": "dot", "size": 10, "title": "THBT animal rights groups should focus their advocacy on creating a world where farmed animals are treated well and killed humanely, rather than on eradicating animal-based products"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "This House Believes That animal rights groups should focus their advocacy on creating a world where farmed animals are treated well and killed humanely, rather than on eradicating animal-based products", "shape": "dot", "size": 10, "title": "This House Believes That animal rights groups should focus their advocacy on creating a world where farmed animals are treated well and killed humanely, rather than on eradicating animal-based products"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "This house believes that the animal rights movement should focus on environmental concerns as opposed to the ethics of animal exploitation", "shape": "dot", "size": 10, "title": "This house believes that the animal rights movement should focus on environmental concerns as opposed to the ethics of animal exploitation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "Given the dichotomy, This House believes that animal rights activists should focus on the environmental impacts that meat consumption has on humans, rather than empathy for animals", "shape": "dot", "size": 10, "title": "Given the dichotomy, This House believes that animal rights activists should focus on the environmental impacts that meat consumption has on humans, rather than empathy for animals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "That we should ban the consumption of animals", "shape": "dot", "size": 10, "title": "That we should ban the consumption of animals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THW make charitable status dependent on an evidence-based assessment of the organisation\u0027s utility (by an external panel of experts)", "shape": "dot", "size": 10, "title": "THW make charitable status dependent on an evidence-based assessment of the organisation\u0027s utility (by an external panel of experts)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THP the use of Pay-for-Success funding for charitable programmes to the use of direct government funding", "shape": "dot", "size": 10, "title": "THP the use of Pay-for-Success funding for charitable programmes to the use of direct government funding"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THW pool donations for specific charity causes and redistribute them to charities according to evidence-based assessment of the efficacy of these charities within the sector", "shape": "dot", "size": 10, "title": "THW pool donations for specific charity causes and redistribute them to charities according to evidence-based assessment of the efficacy of these charities within the sector"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THP a world where individuals donate their money to charity rather than having an equivalent amount taken from them in taxation to provide welfare", "shape": "dot", "size": 10, "title": "THP a world where individuals donate their money to charity rather than having an equivalent amount taken from them in taxation to provide welfare"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "Given a finite amount of disposable income, THP a world where people donate to charities rather than personal crowdfunding campaigns", "shape": "dot", "size": 10, "title": "Given a finite amount of disposable income, THP a world where people donate to charities rather than personal crowdfunding campaigns"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THBT governments should aggressively subsidize the urban poor to migrate to rural areas.", "shape": "dot", "size": 10, "title": "THBT governments should aggressively subsidize the urban poor to migrate to rural areas."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THBT governments should provide significant financial incentives for urban citizens to move to rural areas", "shape": "dot", "size": 10, "title": "THBT governments should provide significant financial incentives for urban citizens to move to rural areas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "That the government should provide incentives for the urban poor to migrate to rural areas.", "shape": "dot", "size": 10, "title": "That the government should provide incentives for the urban poor to migrate to rural areas."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "THW prohibit cities from paying other cities to resettle homeless populations", "shape": "dot", "size": 10, "title": "THW prohibit cities from paying other cities to resettle homeless populations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "THW hold city and local governments civilly responsible for deaths that can be ascribed to homelessness", "shape": "dot", "size": 10, "title": "THW hold city and local governments civilly responsible for deaths that can be ascribed to homelessness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "THBT Australian Indigenous groups should focus on expanding the powers and resources of Land Councils rather than seeking change through State/Federal Parliaments", "shape": "dot", "size": 10, "title": "THBT Australian Indigenous groups should focus on expanding the powers and resources of Land Councils rather than seeking change through State/Federal Parliaments"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THW allow indigenous groups to veto the development of environmentally disruptive projects on their territory", "shape": "dot", "size": 10, "title": "THW allow indigenous groups to veto the development of environmentally disruptive projects on their territory"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THBT international development institutions should not finance natural resource extraction projects in corrupt states", "shape": "dot", "size": 10, "title": "THBT international development institutions should not finance natural resource extraction projects in corrupt states"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THBT governments should not fund reconstruction in areas prone to natural disasters.", "shape": "dot", "size": 10, "title": "THBT governments should not fund reconstruction in areas prone to natural disasters."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "THW require all historically major polluters to open their borders to environmental refugees", "shape": "dot", "size": 10, "title": "THW require all historically major polluters to open their borders to environmental refugees"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THBT major polluter nations should open their borders to climate refugees", "shape": "dot", "size": 10, "title": "THBT major polluter nations should open their borders to climate refugees"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THBT developing nations should distribute, as a dividend to citizens, income derived from natural resource extraction", "shape": "dot", "size": 10, "title": "THBT developing nations should distribute, as a dividend to citizens, income derived from natural resource extraction"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "THBT developing nations should distribute, as a dividend to citizens, income derived from nature resource extraction", "shape": "dot", "size": 10, "title": "THBT developing nations should distribute, as a dividend to citizens, income derived from nature resource extraction"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THBT the presence of charities is a symbol of the failure of humanity", "shape": "dot", "size": 10, "title": "THBT the presence of charities is a symbol of the failure of humanity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "That local communities facing economic recession should be allowed to sell the rights over cultural heritage sites", "shape": "dot", "size": 10, "title": "That local communities facing economic recession should be allowed to sell the rights over cultural heritage sites"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THR the narrative that professionals working for nonprofits perform a \"public service\" or \"sacrifice\"", "shape": "dot", "size": 10, "title": "THR the narrative that professionals working for nonprofits perform a \"public service\" or \"sacrifice\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THW allow citizens to sue local governments for failed or insufficient responses to crises", "shape": "dot", "size": 10, "title": "THW allow citizens to sue local governments for failed or insufficient responses to crises"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THBT it is high time for the environmental movement to embrace nuclear energy", "shape": "dot", "size": 10, "title": "THBT it is high time for the environmental movement to embrace nuclear energy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THW relocate high-risk communities that refuse to resettle in response to climate change", "shape": "dot", "size": 10, "title": "THW relocate high-risk communities that refuse to resettle in response to climate change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THBT our strongest moral obligation is to our surrounding community rather than to humanity at large", "shape": "dot", "size": 10, "title": "THBT our strongest moral obligation is to our surrounding community rather than to humanity at large"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THBT governments should establish and fund a separate healthcare system exclusively run by and for the indigenous people", "shape": "dot", "size": 10, "title": "THBT governments should establish and fund a separate healthcare system exclusively run by and for the indigenous people"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THW establish an environmental commissioner who has universal prosecutory powers for crimes against the environment", "shape": "dot", "size": 10, "title": "THW establish an environmental commissioner who has universal prosecutory powers for crimes against the environment"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "Assuming feasibility, THW mandate a central global authority to control food markets (supply, production, price etc.)", "shape": "dot", "size": 10, "title": "Assuming feasibility, THW mandate a central global authority to control food markets (supply, production, price etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THBT all major legislative decisions must be approved by citizen consultation councils before they are passed.", "shape": "dot", "size": 10, "title": "THBT all major legislative decisions must be approved by citizen consultation councils before they are passed."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "That NZ should seek to double its population in the next 50 years through immigration", "shape": "dot", "size": 10, "title": "That NZ should seek to double its population in the next 50 years through immigration"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "In times of public crises (e.g. epidemics, natural disasters), THBT the government should be temporarily replaced by technocrats", "shape": "dot", "size": 10, "title": "In times of public crises (e.g. epidemics, natural disasters), THBT the government should be temporarily replaced by technocrats"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "THBT anti-omnibus advocates should prioritize advancing economic arguments over human right arguments", "shape": "dot", "size": 10, "title": "THBT anti-omnibus advocates should prioritize advancing economic arguments over human right arguments"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THBT governments should never intervene to stop or slow gentrification", "shape": "dot", "size": 10, "title": "THBT governments should never intervene to stop or slow gentrification"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THP donation-linked consumerism to conscious consumerism.", "shape": "dot", "size": 10, "title": "THP donation-linked consumerism to conscious consumerism."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THW subject all industrialisation projects (infrastructure, energy production etc.) to approval by immediately affected local communities", "shape": "dot", "size": 10, "title": "THW subject all industrialisation projects (infrastructure, energy production etc.) to approval by immediately affected local communities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THBT states should not fund art that is inaccessible to the average citizen.", "shape": "dot", "size": 10, "title": "THBT states should not fund art that is inaccessible to the average citizen."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THS the managed relocation of biodiversity in response to climate change", "shape": "dot", "size": 10, "title": "THS the managed relocation of biodiversity in response to climate change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THBT national policies that may have significant environmental consequences should be subject to a veto by a national level appointed panel of scientific experts", "shape": "dot", "size": 10, "title": "THBT national policies that may have significant environmental consequences should be subject to a veto by a national level appointed panel of scientific experts"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "That local communities should be able to cap the number of tourists that enter their region over a specific period of time.", "shape": "dot", "size": 10, "title": "That local communities should be able to cap the number of tourists that enter their region over a specific period of time."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THBT developing states should aggressively incentivize collective farming", "shape": "dot", "size": 10, "title": "THBT developing states should aggressively incentivize collective farming"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THBT developing countries should invest in green recovery initiatives as opposed to bailing out major industries.", "shape": "dot", "size": 10, "title": "THBT developing countries should invest in green recovery initiatives as opposed to bailing out major industries."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "TH, as the Catholic Church, would prioritize impact investing over direct charity to communities", "shape": "dot", "size": 10, "title": "TH, as the Catholic Church, would prioritize impact investing over direct charity to communities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "THW grant Indigenous communities exclusive legal rights to control distribution of traditional folklore, music, dance", "shape": "dot", "size": 10, "title": "THW grant Indigenous communities exclusive legal rights to control distribution of traditional folklore, music, dance"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THBT India should lease Protected Areas to local residents", "shape": "dot", "size": 10, "title": "THBT India should lease Protected Areas to local residents"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "That developing countries should prioritise the massive construction of infrastructure over the direct provision of high subsidies and social welfare.", "shape": "dot", "size": 10, "title": "That developing countries should prioritise the massive construction of infrastructure over the direct provision of high subsidies and social welfare."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "That we should grant legal personhood to culturally significant features of the natural environment.", "shape": "dot", "size": 10, "title": "That we should grant legal personhood to culturally significant features of the natural environment."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "That we support compassionate conservation", "shape": "dot", "size": 10, "title": "That we support compassionate conservation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THBT it is legitimate for oppressed communities (e.g. poor African American communities in the US) to not pay taxes towards the government", "shape": "dot", "size": 10, "title": "THBT it is legitimate for oppressed communities (e.g. poor African American communities in the US) to not pay taxes towards the government"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THBT tourists should boycott Indigenous tourist destinations", "shape": "dot", "size": 10, "title": "THBT tourists should boycott Indigenous tourist destinations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "TH supports giving legal personhood to internationally recognized important environmental spaces (e.g., Mount Everest, the Amazon) as a form of conservation", "shape": "dot", "size": 10, "title": "TH supports giving legal personhood to internationally recognized important environmental spaces (e.g., Mount Everest, the Amazon) as a form of conservation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "THS efforts to colonize Mars", "shape": "dot", "size": 10, "title": "THS efforts to colonize Mars"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "THBT regulation of overconsumption of common shared resources is justified", "shape": "dot", "size": 10, "title": "THBT regulation of overconsumption of common shared resources is justified"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "As environmental movements, THW focus on campaigning against having children as opposed to campaigning to reduce all forms of consumption", "shape": "dot", "size": 10, "title": "As environmental movements, THW focus on campaigning against having children as opposed to campaigning to reduce all forms of consumption"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "TH opposes the narrative that refugees\u0027 entitlement to help should be conditional upon their potential utility to the economy", "shape": "dot", "size": 10, "title": "TH opposes the narrative that refugees\u0027 entitlement to help should be conditional upon their potential utility to the economy"}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 31, "width": 0.1}, {"from": 0, "to": 49, "width": 0.1}, {"from": 1, "to": 44, "width": 0.1}, {"from": 1, "to": 58, "width": 0.1}, {"from": 1, "to": 80, "width": 0.1}, {"from": 3, "to": 39, "width": 0.1}, {"from": 6, "to": 7, "width": 0.1}, {"from": 6, "to": 33, "width": 0.1}, {"from": 6, "to": 54, "width": 0.1}, {"from": 6, "to": 79, "width": 0.1}, {"from": 7, "to": 12, "width": 0.1}, {"from": 7, "to": 33, "width": 0.1}, {"from": 7, "to": 35, "width": 0.1}, {"from": 7, "to": 54, "width": 0.1}, {"from": 7, "to": 79, "width": 0.1}, {"from": 10, "to": 13, "width": 0.1}, {"from": 10, "to": 16, "width": 0.1}, {"from": 11, "to": 13, "width": 0.1}, {"from": 11, "to": 35, "width": 0.1}, {"from": 12, "to": 13, "width": 0.1}, {"from": 12, "to": 29, "width": 0.1}, {"from": 12, "to": 33, "width": 0.1}, {"from": 12, "to": 36, "width": 0.1}, {"from": 12, "to": 43, "width": 0.1}, {"from": 12, "to": 54, "width": 0.1}, {"from": 12, "to": 69, "width": 0.1}, {"from": 12, "to": 72, "width": 0.1}, {"from": 12, "to": 79, "width": 0.1}, {"from": 12, "to": 88, "width": 0.1}, {"from": 13, "to": 16, "width": 0.1}, {"from": 13, "to": 29, "width": 0.1}, {"from": 13, "to": 35, "width": 0.1}, {"from": 13, "to": 79, "width": 0.1}, {"from": 13, "to": 88, "width": 0.1}, {"from": 13, "to": 89, "width": 0.1}, {"from": 14, "to": 37, "width": 0.1}, {"from": 15, "to": 87, "width": 0.1}, {"from": 16, "to": 18, "width": 0.1}, {"from": 19, "to": 24, "width": 0.1}, {"from": 19, "to": 42, "width": 0.1}, {"from": 19, "to": 63, "width": 0.1}, {"from": 19, "to": 84, "width": 0.1}, {"from": 20, "to": 40, "width": 0.1}, {"from": 20, "to": 52, "width": 0.1}, {"from": 22, "to": 40, "width": 0.1}, {"from": 22, "to": 44, "width": 0.1}, {"from": 22, "to": 47, "width": 0.1}, {"from": 22, "to": 80, "width": 0.1}, {"from": 24, "to": 42, "width": 0.1}, {"from": 24, "to": 63, "width": 0.1}, {"from": 29, "to": 43, "width": 0.1}, {"from": 29, "to": 72, "width": 0.1}, {"from": 29, "to": 88, "width": 0.1}, {"from": 31, "to": 49, "width": 0.1}, {"from": 32, "to": 64, "width": 0.1}, {"from": 32, "to": 65, "width": 0.1}, {"from": 32, "to": 87, "width": 0.1}, {"from": 33, "to": 35, "width": 0.1}, {"from": 33, "to": 43, "width": 0.1}, {"from": 33, "to": 69, "width": 0.1}, {"from": 33, "to": 79, "width": 0.1}, {"from": 35, "to": 43, "width": 0.1}, {"from": 35, "to": 54, "width": 0.1}, {"from": 35, "to": 72, "width": 0.1}, {"from": 35, "to": 88, "width": 0.1}, {"from": 35, "to": 89, "width": 0.1}, {"from": 36, "to": 42, "width": 0.1}, {"from": 36, "to": 79, "width": 0.1}, {"from": 39, "to": 58, "width": 0.1}, {"from": 39, "to": 80, "width": 0.1}, {"from": 40, "to": 44, "width": 0.1}, {"from": 40, "to": 47, "width": 0.1}, {"from": 40, "to": 52, "width": 0.1}, {"from": 40, "to": 80, "width": 0.1}, {"from": 41, "to": 76, "width": 0.1}, {"from": 42, "to": 63, "width": 0.1}, {"from": 42, "to": 79, "width": 0.1}, {"from": 43, "to": 79, "width": 0.1}, {"from": 43, "to": 88, "width": 0.1}, {"from": 44, "to": 47, "width": 0.1}, {"from": 44, "to": 52, "width": 0.1}, {"from": 44, "to": 58, "width": 0.1}, {"from": 44, "to": 80, "width": 0.1}, {"from": 47, "to": 80, "width": 0.1}, {"from": 52, "to": 80, "width": 0.1}, {"from": 54, "to": 79, "width": 0.1}, {"from": 54, "to": 88, "width": 0.1}, {"from": 56, "to": 90, "width": 0.1}, {"from": 58, "to": 80, "width": 0.1}, {"from": 61, "to": 77, "width": 0.1}, {"from": 63, "to": 84, "width": 0.1}, {"from": 64, "to": 65, "width": 0.1}, {"from": 64, "to": 87, "width": 0.1}, {"from": 65, "to": 87, "width": 0.1}, {"from": 69, "to": 88, "width": 0.1}, {"from": 70, "to": 81, "width": 0.1}, {"from": 72, "to": 88, "width": 0.1}, {"from": 73, "to": 86, "width": 0.1}, {"from": 79, "to": 88, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

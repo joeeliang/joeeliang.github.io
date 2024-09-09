@@ -1,0 +1,381 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1980px;
+                 height: 1500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<div id="loadingBar">
+<div class="outerBorder">
+<div id="text">0%</div>
+<div id="border">
+<div id="bar"></div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THP a pessimistic view of aI as opposed to an optimistic one", "shape": "dot", "size": 10, "title": "THP a pessimistic view of aI as opposed to an optimistic one"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THS the rise of relationships with realistic AIs like Replika", "shape": "dot", "size": 10, "title": "THS the rise of relationships with realistic AIs like Replika"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "TH prefers a pessimistic view of AI as opposed to an optimistic one", "shape": "dot", "size": 10, "title": "TH prefers a pessimistic view of AI as opposed to an optimistic one"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "Assuming the technology exists, THW allow people to own AI robots and carry out actions on the robots that would otherwise be deemed as illegal if done to humans", "shape": "dot", "size": 10, "title": "Assuming the technology exists, THW allow people to own AI robots and carry out actions on the robots that would otherwise be deemed as illegal if done to humans"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THW join the resistance against the AI", "shape": "dot", "size": 10, "title": "THW join the resistance against the AI"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "THS the creation and use of \"Lethal Autonomous Robots\"", "shape": "dot", "size": 10, "title": "THS the creation and use of \"Lethal Autonomous Robots\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THO the insertion of Artificial Intelligence into the fields of art and creativity", "shape": "dot", "size": 10, "title": "THO the insertion of Artificial Intelligence into the fields of art and creativity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "THBT Autonomous machine (vehicles, robots, etc.) companies should develop AI which prioritizes the life and well-being of the owner of the machine and those close to them over that of other humans", "shape": "dot", "size": 10, "title": "THBT Autonomous machine (vehicles, robots, etc.) companies should develop AI which prioritizes the life and well-being of the owner of the machine and those close to them over that of other humans"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 115, "label": "TH nationalise all development and usage of AI that are likely to replace human labour", "shape": "dot", "size": 10, "title": "TH nationalise all development and usage of AI that are likely to replace human labour"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THW destroy this tech", "shape": "dot", "size": 10, "title": "THW destroy this tech"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "Assuming validity of the theory, TH will actively reduce growth in technology to avoid the Singularity", "shape": "dot", "size": 10, "title": "Assuming validity of the theory, TH will actively reduce growth in technology to avoid the Singularity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "THW agree to sabotage \"The Process\"", "shape": "dot", "size": 10, "title": "THW agree to sabotage \"The Process\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THBT the technology should be destroyed", "shape": "dot", "size": 10, "title": "THBT the technology should be destroyed"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THW take the job", "shape": "dot", "size": 10, "title": "THW take the job"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THW remove the poster", "shape": "dot", "size": 10, "title": "THW remove the poster"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "Assuming the technology was available, THW allow people to erase specific memories of their choice from existence.", "shape": "dot", "size": 10, "title": "Assuming the technology was available, THW allow people to erase specific memories of their choice from existence."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THW ban TikTok", "shape": "dot", "size": 10, "title": "THW ban TikTok"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "Assuming the technology to alter one\u0027s memories irreversibly exists, THW ban the use of the technology", "shape": "dot", "size": 10, "title": "Assuming the technology to alter one\u0027s memories irreversibly exists, THW ban the use of the technology"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 105, "label": "Assuming you lived a middle class life, THW choose to upload their consciousness to this technology.", "shape": "dot", "size": 10, "title": "Assuming you lived a middle class life, THW choose to upload their consciousness to this technology."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THW abolish the Kafala system", "shape": "dot", "size": 10, "title": "THW abolish the Kafala system"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THW implement the Kafala system for immigrants in the USA", "shape": "dot", "size": 10, "title": "THW implement the Kafala system for immigrants in the USA"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THW implement the Kafala system for immigrants in the USA", "shape": "dot", "size": 10, "title": "THW implement the Kafala system for immigrants in the USA"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THW implement system A in Brazil", "shape": "dot", "size": 10, "title": "THW implement system A in Brazil"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THBT novel drugs should be made available to at risk patients before the completion of Phase III Clinical Trials", "shape": "dot", "size": 10, "title": "THBT novel drugs should be made available to at risk patients before the completion of Phase III Clinical Trials"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "THW support Human Challenge Trials being used to advance medical research", "shape": "dot", "size": 10, "title": "THW support Human Challenge Trials being used to advance medical research"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "TH, as the editors of Nature Communications, would remove this article from their publication", "shape": "dot", "size": 10, "title": "TH, as the editors of Nature Communications, would remove this article from their publication"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "TH, as the editors of Nature Communications, would remove this article from their publication.", "shape": "dot", "size": 10, "title": "TH, as the editors of Nature Communications, would remove this article from their publication."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THBT authors should remain silent on interpretations of their work after the work has been published", "shape": "dot", "size": 10, "title": "THBT authors should remain silent on interpretations of their work after the work has been published"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "THW remove all restrictions on allowable areas of scientific research", "shape": "dot", "size": 10, "title": "THW remove all restrictions on allowable areas of scientific research"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 111, "label": "That we should prohibit research into the de-extinction of human-like species such as the Neanderthal.", "shape": "dot", "size": 10, "title": "That we should prohibit research into the de-extinction of human-like species such as the Neanderthal."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THBT complete human liberty can only be achieved absent the state", "shape": "dot", "size": 10, "title": "THBT complete human liberty can only be achieved absent the state"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "THBT human rights should be granted to all IA who can pass the Turing test", "shape": "dot", "size": 10, "title": "THBT human rights should be granted to all IA who can pass the Turing test"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "THP to be alone in the universe", "shape": "dot", "size": 10, "title": "THP to be alone in the universe"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "THS the complete and total liberation of all animals", "shape": "dot", "size": 10, "title": "THS the complete and total liberation of all animals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THW ban all research into genoeconomics", "shape": "dot", "size": 10, "title": "THW ban all research into genoeconomics"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THR commercial genomic sequencing services accessible by the general public (i.e. 23\u0026Me, Ancestry.com, MyTrueAncestry)", "shape": "dot", "size": 10, "title": "THR commercial genomic sequencing services accessible by the general public (i.e. 23\u0026Me, Ancestry.com, MyTrueAncestry)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THW ban the development of Neuralink technology, or any other brain-computer interface", "shape": "dot", "size": 10, "title": "THW ban the development of Neuralink technology, or any other brain-computer interface"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "Assuming the technology exists, THS genetic engineering to make humans more resistant to the effects of climate change", "shape": "dot", "size": 10, "title": "Assuming the technology exists, THS genetic engineering to make humans more resistant to the effects of climate change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "THR the commercialization of genetic testing (eg: AncestryDNA, 23 \u0026 Me)", "shape": "dot", "size": 10, "title": "THR the commercialization of genetic testing (eg: AncestryDNA, 23 \u0026 Me)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THO the use of scientific discoveries obtained through unethical means", "shape": "dot", "size": 10, "title": "THO the use of scientific discoveries obtained through unethical means"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THW cease the research and teaching of heliocentrism", "shape": "dot", "size": 10, "title": "THW cease the research and teaching of heliocentrism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "Assuming the technology exists, THS the use of non-sentient artifical intelligence that imitates deceased loved ones in appearance, personality, and mannerism", "shape": "dot", "size": 10, "title": "Assuming the technology exists, THS the use of non-sentient artifical intelligence that imitates deceased loved ones in appearance, personality, and mannerism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 103, "label": "Assuming that the technology existed, that we would allow individuals to sell their Intelligence Quotient (IQ) as a commodity", "shape": "dot", "size": 10, "title": "Assuming that the technology existed, that we would allow individuals to sell their Intelligence Quotient (IQ) as a commodity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 106, "label": "THO the use of scientific discoveries obtained through unethical means", "shape": "dot", "size": 10, "title": "THO the use of scientific discoveries obtained through unethical means"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "THW \u0027resurrect\u0027 their significant other", "shape": "dot", "size": 10, "title": "THW \u0027resurrect\u0027 their significant other"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "THW immediately return all treasures and artifacts to indigenous groups that originally possessed them.", "shape": "dot", "size": 10, "title": "THW immediately return all treasures and artifacts to indigenous groups that originally possessed them."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THW introduce the New Life Program", "shape": "dot", "size": 10, "title": "THW introduce the New Life Program"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THP a world where everyone is implanted with the EPA device at birth", "shape": "dot", "size": 10, "title": "THP a world where everyone is implanted with the EPA device at birth"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THW ban zoos", "shape": "dot", "size": 10, "title": "THW ban zoos"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THBT class pets do more harm than good", "shape": "dot", "size": 10, "title": "THBT class pets do more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THW ban advanced simulations", "shape": "dot", "size": 10, "title": "THW ban advanced simulations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "THW ban standardized testing", "shape": "dot", "size": 10, "title": "THW ban standardized testing"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THW accept the offer", "shape": "dot", "size": 10, "title": "THW accept the offer"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "As the resistance group, THW accept the offer", "shape": "dot", "size": 10, "title": "As the resistance group, THW accept the offer"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "Assuming feasibility, THW nationalize all high-cost research equipment and create a national pool of this equipment where all researchers must apply to a centralized agency for access", "shape": "dot", "size": 10, "title": "Assuming feasibility, THW nationalize all high-cost research equipment and create a national pool of this equipment where all researchers must apply to a centralized agency for access"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "Assuming the technology existed, THW allow individuals to sell skills and personality traits", "shape": "dot", "size": 10, "title": "Assuming the technology existed, THW allow individuals to sell skills and personality traits"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THW ban the use of fully autonomous weapons in warfare", "shape": "dot", "size": 10, "title": "THW ban the use of fully autonomous weapons in warfare"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THBT the world would be better off if the human race would cease to exist", "shape": "dot", "size": 10, "title": "THBT the world would be better off if the human race would cease to exist"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "Assuming feasibility, THW allow individuals to sell their units of Intelligence Quotient (IQ)", "shape": "dot", "size": 10, "title": "Assuming feasibility, THW allow individuals to sell their units of Intelligence Quotient (IQ)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "THW direct the Palestinian economy toward information technology", "shape": "dot", "size": 10, "title": "THW direct the Palestinian economy toward information technology"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "Assuming feasibility, THW allow individuals to sell their units of Intelligence Quotient (IQ)", "shape": "dot", "size": 10, "title": "Assuming feasibility, THW allow individuals to sell their units of Intelligence Quotient (IQ)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THBT humanity should invest considerable amount of resources into the exploration of deep space (e.g. colonising, space mining, exploring deep space, finding alien races)", "shape": "dot", "size": 10, "title": "THBT humanity should invest considerable amount of resources into the exploration of deep space (e.g. colonising, space mining, exploring deep space, finding alien races)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 112, "label": "In a world in which humans have obtained the ability of interstellar travel, humans should never make contact with, or interfere with, the development of alien civilisations that are not also capable of interstellar travel.", "shape": "dot", "size": 10, "title": "In a world in which humans have obtained the ability of interstellar travel, humans should never make contact with, or interfere with, the development of alien civilisations that are not also capable of interstellar travel."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THR the rise of Big Data", "shape": "dot", "size": 10, "title": "THR the rise of Big Data"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "TH as Norwegian Nobel Committee will strip Aung Sang Soo kyi of her Nobel Prize.", "shape": "dot", "size": 10, "title": "TH as Norwegian Nobel Committee will strip Aung Sang Soo kyi of her Nobel Prize."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 99, "label": "THBT Greta Thunberg should receive a Nobel Peace Prize", "shape": "dot", "size": 10, "title": "THBT Greta Thunberg should receive a Nobel Peace Prize"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "TH, as X, will not use the machine.", "shape": "dot", "size": 10, "title": "TH, as X, will not use the machine."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THBT X did the right thing.", "shape": "dot", "size": 10, "title": "THBT X did the right thing."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "TH, as X, will go to the police and snitch on the friend", "shape": "dot", "size": 10, "title": "TH, as X, will go to the police and snitch on the friend"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "Assuming feasibility, THW forcibly delete all soldiers\u0027 memories of combat situations upon their discharge.", "shape": "dot", "size": 10, "title": "Assuming feasibility, THW forcibly delete all soldiers\u0027 memories of combat situations upon their discharge."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "Assuming the technology to do so safely and reversibly is available, THW remove the ability of soldiers to feel fear", "shape": "dot", "size": 10, "title": "Assuming the technology to do so safely and reversibly is available, THW remove the ability of soldiers to feel fear"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 108, "label": "Assuming it was possible, THW allow individuals to permanently alter their memories to forget the dead", "shape": "dot", "size": 10, "title": "Assuming it was possible, THW allow individuals to permanently alter their memories to forget the dead"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 117, "label": "THP a world in which it is possible to selectively remove memories", "shape": "dot", "size": 10, "title": "THP a world in which it is possible to selectively remove memories"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 107, "label": "THBT western museums should return historical artifacts to the nations where they originated.", "shape": "dot", "size": 10, "title": "THBT western museums should return historical artifacts to the nations where they originated."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "Given The Existence Of Technology That Permanently Removes The Ability to Sense Both Pleasure And Pain, THW Use It", "shape": "dot", "size": 10, "title": "Given The Existence Of Technology That Permanently Removes The Ability to Sense Both Pleasure And Pain, THW Use It"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THS the rise of telecommuting", "shape": "dot", "size": 10, "title": "THS the rise of telecommuting"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THS Governments Significantly Increasing Their Use of Big Data Based Predictive Models in Decision Making to Replace Human Judgements", "shape": "dot", "size": 10, "title": "THS Governments Significantly Increasing Their Use of Big Data Based Predictive Models in Decision Making to Replace Human Judgements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THW aggressively prioritise programs with high MVPF", "shape": "dot", "size": 10, "title": "THW aggressively prioritise programs with high MVPF"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 98, "label": "THS the existence of teleportation", "shape": "dot", "size": 10, "title": "THS the existence of teleportation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 101, "label": "THBT militaries should prioritize spending on cyber security over physical security", "shape": "dot", "size": 10, "title": "THBT militaries should prioritize spending on cyber security over physical security"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 109, "label": "Assuming the technology were available, and you were the only one who could use it, that you should choose to become immortal", "shape": "dot", "size": 10, "title": "Assuming the technology were available, and you were the only one who could use it, that you should choose to become immortal"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "THW require all research institutions to use at least 50% of their resources (time, staff, money, etc.) to do replication studies", "shape": "dot", "size": 10, "title": "THW require all research institutions to use at least 50% of their resources (time, staff, money, etc.) to do replication studies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "Instead of leaving the decision up to the producing company, THW legally require that Self-Driving Cars produced by companies always choose to maximise the number of lives saved, even if it leads to the death of the passengers", "shape": "dot", "size": 10, "title": "Instead of leaving the decision up to the producing company, THW legally require that Self-Driving Cars produced by companies always choose to maximise the number of lives saved, even if it leads to the death of the passengers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "THW programme self-driving cars to prioritise the number of lives saved when faced with unavoidable collisions as opposed to prioritising the safety of the driver/passenger", "shape": "dot", "size": 10, "title": "THW programme self-driving cars to prioritise the number of lives saved when faced with unavoidable collisions as opposed to prioritising the safety of the driver/passenger"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THW allow women to activate deadly, rainbow-coloured, laser beams from their eyes, but only whenever they are in the close proximity of men.", "shape": "dot", "size": 10, "title": "THW allow women to activate deadly, rainbow-coloured, laser beams from their eyes, but only whenever they are in the close proximity of men."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 100, "label": "As Annisa, THW take the job", "shape": "dot", "size": 10, "title": "As Annisa, THW take the job"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THP a world with the Inside-Out reader", "shape": "dot", "size": 10, "title": "THP a world with the Inside-Out reader"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "THW allow doctors to disclose incurable and terminal hereditary conditions to their patient\u0027s life partner against the patient\u0027s wishes", "shape": "dot", "size": 10, "title": "THW allow doctors to disclose incurable and terminal hereditary conditions to their patient\u0027s life partner against the patient\u0027s wishes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 113, "label": "THW institute a health credit system (inexact wording)", "shape": "dot", "size": 10, "title": "THW institute a health credit system (inexact wording)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "THW require all public museums to digitise their collections", "shape": "dot", "size": 10, "title": "THW require all public museums to digitise their collections"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THW choose immortality", "shape": "dot", "size": 10, "title": "THW choose immortality"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THW prefer to live in a world where one was mortal but could precisely schedule and plan out one`s death", "shape": "dot", "size": 10, "title": "THW prefer to live in a world where one was mortal but could precisely schedule and plan out one`s death"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 116, "label": "Assuming the technology exists, TH supports the use of augmented eternity for people in highly influential positions (e.g: top academics, researchers, CEOs or politicians)", "shape": "dot", "size": 10, "title": "Assuming the technology exists, TH supports the use of augmented eternity for people in highly influential positions (e.g: top academics, researchers, CEOs or politicians)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "Assuming there is a safe procedure, THW allow adults to permanently \"lock in\" their chosen personality traits (e.g. stubbornness, openness, honesty) as unchangeable.", "shape": "dot", "size": 10, "title": "Assuming there is a safe procedure, THW allow adults to permanently \"lock in\" their chosen personality traits (e.g. stubbornness, openness, honesty) as unchangeable."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 114, "label": "This house, as person X, would choose to upload yourself onto the digital afterlife instead of going through with the surgery", "shape": "dot", "size": 10, "title": "This house, as person X, would choose to upload yourself onto the digital afterlife instead of going through with the surgery"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 102, "label": "That we shuold genetically design \"Philosopher Kings\"", "shape": "dot", "size": 10, "title": "That we shuold genetically design \"Philosopher Kings\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THW test the peer review process of academic journals through the submission of Sokal papers", "shape": "dot", "size": 10, "title": "THW test the peer review process of academic journals through the submission of Sokal papers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THP a world in which the registry exists", "shape": "dot", "size": 10, "title": "THP a world in which the registry exists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "TH, as Comedian DJ, would accept the offer to join Taskmaster", "shape": "dot", "size": 10, "title": "TH, as Comedian DJ, would accept the offer to join Taskmaster"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THS the idea that UCL in future editions should opt for a 1 leg knockouts over the traditional system.", "shape": "dot", "size": 10, "title": "THS the idea that UCL in future editions should opt for a 1 leg knockouts over the traditional system."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THW prefer to be born with HSAM", "shape": "dot", "size": 10, "title": "THW prefer to be born with HSAM"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "TH, as Wakanda, would remove the cloaking field", "shape": "dot", "size": 10, "title": "TH, as Wakanda, would remove the cloaking field"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THW require meat packaging to display image that accurately reflects the experiences of animals throughout the manufacturing process", "shape": "dot", "size": 10, "title": "THW require meat packaging to display image that accurately reflects the experiences of animals throughout the manufacturing process"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THW expose Harvey Dent", "shape": "dot", "size": 10, "title": "THW expose Harvey Dent"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THR Kpop", "shape": "dot", "size": 10, "title": "THR Kpop"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THW touch the stone", "shape": "dot", "size": 10, "title": "THW touch the stone"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THP utilitarianism to deontology", "shape": "dot", "size": 10, "title": "THP utilitarianism to deontology"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "TH welcomes \"Minds\"", "shape": "dot", "size": 10, "title": "TH welcomes \"Minds\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "TH, as a witch or wizard, would create a Horcrux", "shape": "dot", "size": 10, "title": "TH, as a witch or wizard, would create a Horcrux"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THS \"gold digging\"", "shape": "dot", "size": 10, "title": "THS \"gold digging\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "Assuming there exists the technology to divide the 40 weeks of pregnancy between two partners in any possible way, THW mandate that each partner carries for half the term.", "shape": "dot", "size": 10, "title": "Assuming there exists the technology to divide the 40 weeks of pregnancy between two partners in any possible way, THW mandate that each partner carries for half the term."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "someone pls provide this, it isn\u0027t available online", "shape": "dot", "size": 10, "title": "someone pls provide this, it isn\u0027t available online"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "THR the rise of T-10 cricket", "shape": "dot", "size": 10, "title": "THR the rise of T-10 cricket"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "THS Fisher\u0027s Protocol", "shape": "dot", "size": 10, "title": "THS Fisher\u0027s Protocol"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THBT the scientific community should reject the notion of \"non-overlapping magisteria\"", "shape": "dot", "size": 10, "title": "THBT the scientific community should reject the notion of \"non-overlapping magisteria\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "THW use Soul 100", "shape": "dot", "size": 10, "title": "THW use Soul 100"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 104, "label": "You are a publicly successful chef, whose real cooking skill is secretly attributable to a rat which directs your movements underneath your chef\u0027s hat. That we should reveal the existence of the rat.", "shape": "dot", "size": 10, "title": "You are a publicly successful chef, whose real cooking skill is secretly attributable to a rat which directs your movements underneath your chef\u0027s hat. That we should reveal the existence of the rat."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 110, "label": "You have suffered from severe amnesia and cannot remember any of your past. You suspect that it may be \"dark\". That you should not go searching for answers", "shape": "dot", "size": 10, "title": "You have suffered from severe amnesia and cannot remember any of your past. You suspect that it may be \"dark\". That you should not go searching for answers"}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 1, "width": 0.1}, {"from": 0, "to": 8, "width": 0.1}, {"from": 0, "to": 21, "width": 0.1}, {"from": 0, "to": 23, "width": 0.1}, {"from": 0, "to": 47, "width": 0.1}, {"from": 0, "to": 49, "width": 0.1}, {"from": 0, "to": 56, "width": 0.1}, {"from": 0, "to": 115, "width": 0.1}, {"from": 1, "to": 8, "width": 0.1}, {"from": 1, "to": 21, "width": 0.1}, {"from": 1, "to": 23, "width": 0.1}, {"from": 1, "to": 47, "width": 0.1}, {"from": 1, "to": 49, "width": 0.1}, {"from": 1, "to": 56, "width": 0.1}, {"from": 1, "to": 115, "width": 0.1}, {"from": 2, "to": 25, "width": 0.1}, {"from": 2, "to": 41, "width": 0.1}, {"from": 2, "to": 43, "width": 0.1}, {"from": 2, "to": 52, "width": 0.1}, {"from": 2, "to": 57, "width": 0.1}, {"from": 2, "to": 70, "width": 0.1}, {"from": 2, "to": 81, "width": 0.1}, {"from": 2, "to": 96, "width": 0.1}, {"from": 2, "to": 105, "width": 0.1}, {"from": 3, "to": 20, "width": 0.1}, {"from": 3, "to": 61, "width": 0.1}, {"from": 3, "to": 65, "width": 0.1}, {"from": 4, "to": 58, "width": 0.1}, {"from": 6, "to": 7, "width": 0.1}, {"from": 6, "to": 35, "width": 0.1}, {"from": 6, "to": 88, "width": 0.1}, {"from": 6, "to": 111, "width": 0.1}, {"from": 7, "to": 35, "width": 0.1}, {"from": 7, "to": 57, "width": 0.1}, {"from": 7, "to": 88, "width": 0.1}, {"from": 7, "to": 111, "width": 0.1}, {"from": 8, "to": 21, "width": 0.1}, {"from": 8, "to": 23, "width": 0.1}, {"from": 8, "to": 49, "width": 0.1}, {"from": 8, "to": 56, "width": 0.1}, {"from": 8, "to": 115, "width": 0.1}, {"from": 9, "to": 60, "width": 0.1}, {"from": 9, "to": 84, "width": 0.1}, {"from": 9, "to": 87, "width": 0.1}, {"from": 10, "to": 12, "width": 0.1}, {"from": 10, "to": 22, "width": 0.1}, {"from": 10, "to": 58, "width": 0.1}, {"from": 10, "to": 80, "width": 0.1}, {"from": 10, "to": 88, "width": 0.1}, {"from": 10, "to": 92, "width": 0.1}, {"from": 10, "to": 96, "width": 0.1}, {"from": 10, "to": 111, "width": 0.1}, {"from": 12, "to": 92, "width": 0.1}, {"from": 13, "to": 18, "width": 0.1}, {"from": 13, "to": 74, "width": 0.1}, {"from": 13, "to": 88, "width": 0.1}, {"from": 13, "to": 103, "width": 0.1}, {"from": 13, "to": 106, "width": 0.1}, {"from": 13, "to": 111, "width": 0.1}, {"from": 14, "to": 34, "width": 0.1}, {"from": 15, "to": 48, "width": 0.1}, {"from": 15, "to": 105, "width": 0.1}, {"from": 16, "to": 44, "width": 0.1}, {"from": 16, "to": 66, "width": 0.1}, {"from": 16, "to": 81, "width": 0.1}, {"from": 16, "to": 87, "width": 0.1}, {"from": 16, "to": 88, "width": 0.1}, {"from": 16, "to": 93, "width": 0.1}, {"from": 16, "to": 111, "width": 0.1}, {"from": 18, "to": 106, "width": 0.1}, {"from": 19, "to": 52, "width": 0.1}, {"from": 19, "to": 86, "width": 0.1}, {"from": 20, "to": 61, "width": 0.1}, {"from": 20, "to": 65, "width": 0.1}, {"from": 21, "to": 22, "width": 0.1}, {"from": 21, "to": 23, "width": 0.1}, {"from": 21, "to": 25, "width": 0.1}, {"from": 21, "to": 41, "width": 0.1}, {"from": 21, "to": 43, "width": 0.1}, {"from": 21, "to": 46, "width": 0.1}, {"from": 21, "to": 47, "width": 0.1}, {"from": 21, "to": 49, "width": 0.1}, {"from": 21, "to": 56, "width": 0.1}, {"from": 21, "to": 58, "width": 0.1}, {"from": 21, "to": 60, "width": 0.1}, {"from": 21, "to": 63, "width": 0.1}, {"from": 21, "to": 68, "width": 0.1}, {"from": 21, "to": 69, "width": 0.1}, {"from": 21, "to": 70, "width": 0.1}, {"from": 21, "to": 74, "width": 0.1}, {"from": 21, "to": 82, "width": 0.1}, {"from": 21, "to": 85, "width": 0.1}, {"from": 21, "to": 91, "width": 0.1}, {"from": 21, "to": 96, "width": 0.1}, {"from": 21, "to": 103, "width": 0.1}, {"from": 21, "to": 105, "width": 0.1}, {"from": 21, "to": 115, "width": 0.1}, {"from": 22, "to": 43, "width": 0.1}, {"from": 22, "to": 63, "width": 0.1}, {"from": 22, "to": 70, "width": 0.1}, {"from": 22, "to": 96, "width": 0.1}, {"from": 23, "to": 41, "width": 0.1}, {"from": 23, "to": 47, "width": 0.1}, {"from": 23, "to": 49, "width": 0.1}, {"from": 23, "to": 56, "width": 0.1}, {"from": 23, "to": 60, "width": 0.1}, {"from": 23, "to": 68, "width": 0.1}, {"from": 23, "to": 82, "width": 0.1}, {"from": 23, "to": 86, "width": 0.1}, {"from": 23, "to": 91, "width": 0.1}, {"from": 23, "to": 115, "width": 0.1}, {"from": 24, "to": 46, "width": 0.1}, {"from": 24, "to": 112, "width": 0.1}, {"from": 25, "to": 38, "width": 0.1}, {"from": 25, "to": 43, "width": 0.1}, {"from": 25, "to": 70, "width": 0.1}, {"from": 25, "to": 85, "width": 0.1}, {"from": 25, "to": 88, "width": 0.1}, {"from": 25, "to": 96, "width": 0.1}, {"from": 25, "to": 103, "width": 0.1}, {"from": 25, "to": 115, "width": 0.1}, {"from": 27, "to": 99, "width": 0.1}, {"from": 28, "to": 29, "width": 0.1}, {"from": 29, "to": 30, "width": 0.1}, {"from": 29, "to": 41, "width": 0.1}, {"from": 33, "to": 51, "width": 0.1}, {"from": 33, "to": 68, "width": 0.1}, {"from": 33, "to": 70, "width": 0.1}, {"from": 33, "to": 96, "width": 0.1}, {"from": 33, "to": 108, "width": 0.1}, {"from": 33, "to": 117, "width": 0.1}, {"from": 34, "to": 86, "width": 0.1}, {"from": 34, "to": 87, "width": 0.1}, {"from": 34, "to": 107, "width": 0.1}, {"from": 35, "to": 41, "width": 0.1}, {"from": 35, "to": 70, "width": 0.1}, {"from": 37, "to": 96, "width": 0.1}, {"from": 37, "to": 117, "width": 0.1}, {"from": 38, "to": 42, "width": 0.1}, {"from": 38, "to": 43, "width": 0.1}, {"from": 38, "to": 77, "width": 0.1}, {"from": 39, "to": 93, "width": 0.1}, {"from": 41, "to": 43, "width": 0.1}, {"from": 41, "to": 52, "width": 0.1}, {"from": 41, "to": 70, "width": 0.1}, {"from": 41, "to": 96, "width": 0.1}, {"from": 41, "to": 108, "width": 0.1}, {"from": 42, "to": 98, "width": 0.1}, {"from": 42, "to": 105, "width": 0.1}, {"from": 43, "to": 47, "width": 0.1}, {"from": 43, "to": 56, "width": 0.1}, {"from": 43, "to": 60, "width": 0.1}, {"from": 43, "to": 69, "width": 0.1}, {"from": 43, "to": 70, "width": 0.1}, {"from": 43, "to": 80, "width": 0.1}, {"from": 43, "to": 85, "width": 0.1}, {"from": 43, "to": 88, "width": 0.1}, {"from": 43, "to": 96, "width": 0.1}, {"from": 43, "to": 101, "width": 0.1}, {"from": 43, "to": 105, "width": 0.1}, {"from": 43, "to": 109, "width": 0.1}, {"from": 43, "to": 111, "width": 0.1}, {"from": 46, "to": 58, "width": 0.1}, {"from": 46, "to": 88, "width": 0.1}, {"from": 46, "to": 94, "width": 0.1}, {"from": 47, "to": 56, "width": 0.1}, {"from": 47, "to": 68, "width": 0.1}, {"from": 47, "to": 72, "width": 0.1}, {"from": 47, "to": 89, "width": 0.1}, {"from": 47, "to": 115, "width": 0.1}, {"from": 48, "to": 105, "width": 0.1}, {"from": 49, "to": 56, "width": 0.1}, {"from": 49, "to": 74, "width": 0.1}, {"from": 49, "to": 103, "width": 0.1}, {"from": 49, "to": 115, "width": 0.1}, {"from": 50, "to": 51, "width": 0.1}, {"from": 51, "to": 68, "width": 0.1}, {"from": 51, "to": 70, "width": 0.1}, {"from": 51, "to": 96, "width": 0.1}, {"from": 51, "to": 108, "width": 0.1}, {"from": 52, "to": 86, "width": 0.1}, {"from": 52, "to": 100, "width": 0.1}, {"from": 55, "to": 117, "width": 0.1}, {"from": 56, "to": 60, "width": 0.1}, {"from": 56, "to": 72, "width": 0.1}, {"from": 56, "to": 74, "width": 0.1}, {"from": 56, "to": 82, "width": 0.1}, {"from": 56, "to": 89, "width": 0.1}, {"from": 56, "to": 91, "width": 0.1}, {"from": 56, "to": 103, "width": 0.1}, {"from": 56, "to": 115, "width": 0.1}, {"from": 58, "to": 63, "width": 0.1}, {"from": 58, "to": 66, "width": 0.1}, {"from": 58, "to": 70, "width": 0.1}, {"from": 58, "to": 92, "width": 0.1}, {"from": 58, "to": 93, "width": 0.1}, {"from": 58, "to": 94, "width": 0.1}, {"from": 58, "to": 95, "width": 0.1}, {"from": 58, "to": 108, "width": 0.1}, {"from": 58, "to": 113, "width": 0.1}, {"from": 59, "to": 107, "width": 0.1}, {"from": 60, "to": 115, "width": 0.1}, {"from": 61, "to": 65, "width": 0.1}, {"from": 62, "to": 73, "width": 0.1}, {"from": 62, "to": 108, "width": 0.1}, {"from": 62, "to": 109, "width": 0.1}, {"from": 62, "to": 116, "width": 0.1}, {"from": 63, "to": 70, "width": 0.1}, {"from": 63, "to": 74, "width": 0.1}, {"from": 63, "to": 82, "width": 0.1}, {"from": 63, "to": 83, "width": 0.1}, {"from": 63, "to": 85, "width": 0.1}, {"from": 63, "to": 91, "width": 0.1}, {"from": 63, "to": 96, "width": 0.1}, {"from": 63, "to": 103, "width": 0.1}, {"from": 63, "to": 105, "width": 0.1}, {"from": 63, "to": 109, "width": 0.1}, {"from": 66, "to": 68, "width": 0.1}, {"from": 66, "to": 81, "width": 0.1}, {"from": 66, "to": 93, "width": 0.1}, {"from": 66, "to": 96, "width": 0.1}, {"from": 68, "to": 89, "width": 0.1}, {"from": 68, "to": 93, "width": 0.1}, {"from": 68, "to": 96, "width": 0.1}, {"from": 69, "to": 73, "width": 0.1}, {"from": 69, "to": 80, "width": 0.1}, {"from": 69, "to": 87, "width": 0.1}, {"from": 69, "to": 111, "width": 0.1}, {"from": 69, "to": 112, "width": 0.1}, {"from": 70, "to": 74, "width": 0.1}, {"from": 70, "to": 88, "width": 0.1}, {"from": 70, "to": 95, "width": 0.1}, {"from": 70, "to": 96, "width": 0.1}, {"from": 70, "to": 103, "width": 0.1}, {"from": 70, "to": 105, "width": 0.1}, {"from": 70, "to": 108, "width": 0.1}, {"from": 70, "to": 109, "width": 0.1}, {"from": 70, "to": 116, "width": 0.1}, {"from": 70, "to": 117, "width": 0.1}, {"from": 72, "to": 89, "width": 0.1}, {"from": 73, "to": 108, "width": 0.1}, {"from": 73, "to": 109, "width": 0.1}, {"from": 73, "to": 114, "width": 0.1}, {"from": 74, "to": 96, "width": 0.1}, {"from": 74, "to": 103, "width": 0.1}, {"from": 74, "to": 105, "width": 0.1}, {"from": 74, "to": 106, "width": 0.1}, {"from": 74, "to": 108, "width": 0.1}, {"from": 74, "to": 109, "width": 0.1}, {"from": 74, "to": 114, "width": 0.1}, {"from": 74, "to": 116, "width": 0.1}, {"from": 80, "to": 92, "width": 0.1}, {"from": 80, "to": 102, "width": 0.1}, {"from": 80, "to": 111, "width": 0.1}, {"from": 81, "to": 93, "width": 0.1}, {"from": 82, "to": 91, "width": 0.1}, {"from": 82, "to": 103, "width": 0.1}, {"from": 83, "to": 108, "width": 0.1}, {"from": 84, "to": 98, "width": 0.1}, {"from": 85, "to": 105, "width": 0.1}, {"from": 87, "to": 111, "width": 0.1}, {"from": 88, "to": 93, "width": 0.1}, {"from": 88, "to": 94, "width": 0.1}, {"from": 88, "to": 96, "width": 0.1}, {"from": 88, "to": 106, "width": 0.1}, {"from": 88, "to": 111, "width": 0.1}, {"from": 91, "to": 103, "width": 0.1}, {"from": 93, "to": 96, "width": 0.1}, {"from": 95, "to": 108, "width": 0.1}, {"from": 96, "to": 103, "width": 0.1}, {"from": 96, "to": 105, "width": 0.1}, {"from": 96, "to": 108, "width": 0.1}, {"from": 96, "to": 109, "width": 0.1}, {"from": 96, "to": 117, "width": 0.1}, {"from": 98, "to": 116, "width": 0.1}, {"from": 103, "to": 105, "width": 0.1}, {"from": 103, "to": 106, "width": 0.1}, {"from": 103, "to": 109, "width": 0.1}, {"from": 103, "to": 115, "width": 0.1}, {"from": 105, "to": 108, "width": 0.1}, {"from": 105, "to": 109, "width": 0.1}, {"from": 105, "to": 114, "width": 0.1}, {"from": 105, "to": 116, "width": 0.1}, {"from": 106, "to": 111, "width": 0.1}, {"from": 108, "to": 114, "width": 0.1}, {"from": 108, "to": 117, "width": 0.1}, {"from": 109, "to": 116, "width": 0.1}, {"from": 111, "to": 112, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

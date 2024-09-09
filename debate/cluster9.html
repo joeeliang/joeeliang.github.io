@@ -1,0 +1,381 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1980px;
+                 height: 1500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<div id="loadingBar">
+<div class="outerBorder">
+<div id="text">0%</div>
+<div id="border">
+<div id="bar"></div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "This House Would mandate property developers to build low-cost housing proximate to their high-end construction projects", "shape": "dot", "size": 10, "title": "This House Would mandate property developers to build low-cost housing proximate to their high-end construction projects"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "In areas with rapidly rising property prices, This House would suspend all restrictions on property development that are not health and safety requirements (for example, environmental zoning regulations, building height restrictions, and regulations on the appearance of buildings)", "shape": "dot", "size": 10, "title": "In areas with rapidly rising property prices, This House would suspend all restrictions on property development that are not health and safety requirements (for example, environmental zoning regulations, building height restrictions, and regulations on the appearance of buildings)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "This House believes that developing countries should prioritise the massive construction of infrastructure over the direct provision of high subsidies and social welfare", "shape": "dot", "size": 10, "title": "This House believes that developing countries should prioritise the massive construction of infrastructure over the direct provision of high subsidies and social welfare"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "This House Prefers the characterisation of politics as a \u201ccareer\u201d, instead of \u201csocial / public service\u201d", "shape": "dot", "size": 10, "title": "This House Prefers the characterisation of politics as a \u201ccareer\u201d, instead of \u201csocial / public service\u201d"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "This House prefers the characterisation of politics as a \u0027career\u0027 instead of \u0027social/public service\u0027.", "shape": "dot", "size": 10, "title": "This House prefers the characterisation of politics as a \u0027career\u0027 instead of \u0027social/public service\u0027."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "This House Opposes the Rise of Non-Career Politicians", "shape": "dot", "size": 10, "title": "This House Opposes the Rise of Non-Career Politicians"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "This House Believes That all countries should impose mandatory military conscription", "shape": "dot", "size": 10, "title": "This House Believes That all countries should impose mandatory military conscription"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "This House believes that in post-conflict societies, the national government should actively attempt to recruit militias and insurgency groups into the national military over attempting to quash them.", "shape": "dot", "size": 10, "title": "This House believes that in post-conflict societies, the national government should actively attempt to recruit militias and insurgency groups into the national military over attempting to quash them."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "This house will conduct a referendum amongst the armed forces before initiating a war", "shape": "dot", "size": 10, "title": "This house will conduct a referendum amongst the armed forces before initiating a war"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "In countries with conscription, This House Believes That it is morally legitimate to evade draft", "shape": "dot", "size": 10, "title": "In countries with conscription, This House Believes That it is morally legitimate to evade draft"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "This House Believes That states should adopt sunset clauses that legally force them to review and either re-authorize or revise their constitutions every generation", "shape": "dot", "size": 10, "title": "This House Believes That states should adopt sunset clauses that legally force them to review and either re-authorize or revise their constitutions every generation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "This House Believes that states should adopt sunset clauses that legally force them to review and either re-authorize or revise their constitutions every generation.", "shape": "dot", "size": 10, "title": "This House Believes that states should adopt sunset clauses that legally force them to review and either re-authorize or revise their constitutions every generation."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "This House Regrets the rise of citizen journalism", "shape": "dot", "size": 10, "title": "This House Regrets the rise of citizen journalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "This house regrets the narrative that one should respect authority figures even if you disagree with them", "shape": "dot", "size": 10, "title": "This house regrets the narrative that one should respect authority figures even if you disagree with them"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "This House regrets the glorification of the narrative that hard work is the key to success.", "shape": "dot", "size": 10, "title": "This House regrets the glorification of the narrative that hard work is the key to success."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "This House regrets the narrative that the empowerment of historically oppressed communities is an intergenerational obligation for members of that community.", "shape": "dot", "size": 10, "title": "This House regrets the narrative that the empowerment of historically oppressed communities is an intergenerational obligation for members of that community."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "This House Regrets the narrative that the process of overcoming illnesses (e.g. cancer) is a \"fight\".", "shape": "dot", "size": 10, "title": "This House Regrets the narrative that the process of overcoming illnesses (e.g. cancer) is a \"fight\"."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "This House would forcibly break up banks that exceed a certain size.", "shape": "dot", "size": 10, "title": "This House would forcibly break up banks that exceed a certain size."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "This House Would break up Amazon", "shape": "dot", "size": 10, "title": "This House Would break up Amazon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 107, "label": "This House would ban payday loans.", "shape": "dot", "size": 10, "title": "This House would ban payday loans."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "This House supports materialism", "shape": "dot", "size": 10, "title": "This House supports materialism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "This house supports the shaming of individuals as a tactic for the environmental movement to catalyse change", "shape": "dot", "size": 10, "title": "This house supports the shaming of individuals as a tactic for the environmental movement to catalyse change"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "This House Would allow states to use mercenary forces in combat roles in active military operations.", "shape": "dot", "size": 10, "title": "This House Would allow states to use mercenary forces in combat roles in active military operations."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "This House Believes That humanity should move away from the narrative of individual responsibility in the community", "shape": "dot", "size": 10, "title": "This House Believes That humanity should move away from the narrative of individual responsibility in the community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "This House believes that individuals should be encouraged to make significant sacrifices for their community", "shape": "dot", "size": 10, "title": "This House believes that individuals should be encouraged to make significant sacrifices for their community"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "This House would allow people raised in isolated communities (e.g. the Amish, Hasidic Jews) to sue their communities for harms caused by their lifestyle.", "shape": "dot", "size": 10, "title": "This House would allow people raised in isolated communities (e.g. the Amish, Hasidic Jews) to sue their communities for harms caused by their lifestyle."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "This House Prefers a world where altruism is the only acceptable motive in doing good deeds", "shape": "dot", "size": 10, "title": "This House Prefers a world where altruism is the only acceptable motive in doing good deeds"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "This House would give financial incentives to people who live a healthy lifestyle (eg. no smoking, exercising regularly, healthy diet)", "shape": "dot", "size": 10, "title": "This House would give financial incentives to people who live a healthy lifestyle (eg. no smoking, exercising regularly, healthy diet)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 99, "label": "This House believes that in times of severe crisis, individuals have a moral obligation to dedicate themselves towards combating the crisis", "shape": "dot", "size": 10, "title": "This House believes that in times of severe crisis, individuals have a moral obligation to dedicate themselves towards combating the crisis"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "This House Would allocate the majority of government sports funding to encourage grassroots participation (e.g. amateur community clubs, after school sports clubs, etc.) rather than invest in achieving success in prestigious competitions (e.g. intensive coaching academies, player and personnel salaries, etc.)", "shape": "dot", "size": 10, "title": "This House Would allocate the majority of government sports funding to encourage grassroots participation (e.g. amateur community clubs, after school sports clubs, etc.) rather than invest in achieving success in prestigious competitions (e.g. intensive coaching academies, player and personnel salaries, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "This House Believes that developing countries should privatize their State Owned Enterprises(Such as airlines, railway, utility companies)", "shape": "dot", "size": 10, "title": "This House Believes that developing countries should privatize their State Owned Enterprises(Such as airlines, railway, utility companies)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "This House, as developing nations, would prioritize local industries over foreign MNCs (e.g. subsidize local car brands and tax foreign imported cars)", "shape": "dot", "size": 10, "title": "This House, as developing nations, would prioritize local industries over foreign MNCs (e.g. subsidize local car brands and tax foreign imported cars)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "This House, as an average reasonable person, would prefer to live in an economically-performing autocracy rather than a populist democracy with relatively-stagnant economic development", "shape": "dot", "size": 10, "title": "This House, as an average reasonable person, would prefer to live in an economically-performing autocracy rather than a populist democracy with relatively-stagnant economic development"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 119, "label": "This House prefers a cynical and pessimistic perception of democratic politics to an idealistic and optimistic one.", "shape": "dot", "size": 10, "title": "This House prefers a cynical and pessimistic perception of democratic politics to an idealistic and optimistic one."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "This House, as Progressives in an increasingly authoritarian governance, prefers coalition with the lesser evil rather than using riot to radically change the status quo  (i.e Indonesia, Hong Kong)", "shape": "dot", "size": 10, "title": "This House, as Progressives in an increasingly authoritarian governance, prefers coalition with the lesser evil rather than using riot to radically change the status quo  (i.e Indonesia, Hong Kong)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 120, "label": "This House prefers a \"Brave New World\" to the status quo in Western Liberal Democracies.", "shape": "dot", "size": 10, "title": "This House prefers a \"Brave New World\" to the status quo in Western Liberal Democracies."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "This house prefers process-based to outcomes-based environmental regulation", "shape": "dot", "size": 10, "title": "This house prefers process-based to outcomes-based environmental regulation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "This house supports the continued development of technology that renders human workers obsolete (e.g. self-driving cars, automated factories, AI helpdesks)", "shape": "dot", "size": 10, "title": "This house supports the continued development of technology that renders human workers obsolete (e.g. self-driving cars, automated factories, AI helpdesks)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "Assuming that a technology exists that can accurately measure and transfer intelligence This House would radically redistribute intelligence among the population", "shape": "dot", "size": 10, "title": "Assuming that a technology exists that can accurately measure and transfer intelligence This House would radically redistribute intelligence among the population"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "Assuming the technology exists, this house would allow people to buy and sell years of their life.", "shape": "dot", "size": 10, "title": "Assuming the technology exists, this house would allow people to buy and sell years of their life."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "Assuming the technology exists, this house would allow people to buy and sell years of their life.", "shape": "dot", "size": 10, "title": "Assuming the technology exists, this house would allow people to buy and sell years of their life."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "This House Would convert marriages into renewable contracts with agreed upon terms and conditions that are revisited every few years.", "shape": "dot", "size": 10, "title": "This House Would convert marriages into renewable contracts with agreed upon terms and conditions that are revisited every few years."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "This House Supports rioting as a means of fighting for social justice in the U.S.", "shape": "dot", "size": 10, "title": "This House Supports rioting as a means of fighting for social justice in the U.S."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 111, "label": "This House would allow children to sue their parents for religious indoctrination.", "shape": "dot", "size": 10, "title": "This House would allow children to sue their parents for religious indoctrination."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 117, "label": "This House would abolish the private ownership of (housing) property in major metropolitan areas.", "shape": "dot", "size": 10, "title": "This House would abolish the private ownership of (housing) property in major metropolitan areas."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "This House would ban big game hunting", "shape": "dot", "size": 10, "title": "This House would ban big game hunting"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "This House would ban plain clothes policing", "shape": "dot", "size": 10, "title": "This House would ban plain clothes policing"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "This house regrets the division of Hong Kong businesses by their political allegience.", "shape": "dot", "size": 10, "title": "This house regrets the division of Hong Kong businesses by their political allegience."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 121, "label": "This House, as China, would grant universal suffrage to Hong Kong.", "shape": "dot", "size": 10, "title": "This House, as China, would grant universal suffrage to Hong Kong."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "This House prefers human beings over the next few millennia to gradually and peacefully go extinct, replaced by artificially intelligent beings.", "shape": "dot", "size": 10, "title": "This House prefers human beings over the next few millennia to gradually and peacefully go extinct, replaced by artificially intelligent beings."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 116, "label": "This House prefers a world where, starting today, all humans have identical intellectual abilities (equivalent to the current global average).", "shape": "dot", "size": 10, "title": "This House prefers a world where, starting today, all humans have identical intellectual abilities (equivalent to the current global average)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 115, "label": "This House would abolish primary and secondary school grades/years that group children based on age, and instead group them by competency and intelligence.", "shape": "dot", "size": 10, "title": "This House would abolish primary and secondary school grades/years that group children based on age, and instead group them by competency and intelligence."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "That we would abolish Slytherin house", "shape": "dot", "size": 10, "title": "That we would abolish Slytherin house"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 106, "label": "This House would immediately abolish Two Schools under One Roof.", "shape": "dot", "size": 10, "title": "This House would immediately abolish Two Schools under One Roof."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "This house prefers a world in which people predominantly believe that all decisions, thoughts, and actions of all in the universe are pre-determined.", "shape": "dot", "size": 10, "title": "This house prefers a world in which people predominantly believe that all decisions, thoughts, and actions of all in the universe are pre-determined."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "This house supports health insurance companies offering optional lump sum payments to terminally ill patients who choose to forgo expensive life extending medical treatments.", "shape": "dot", "size": 10, "title": "This house supports health insurance companies offering optional lump sum payments to terminally ill patients who choose to forgo expensive life extending medical treatments."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "This House Would ban Amazon\u0027s internal arbitration courts.", "shape": "dot", "size": 10, "title": "This House Would ban Amazon\u0027s internal arbitration courts."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "This House Would ban insurance coverage for sexual misconduct claims.", "shape": "dot", "size": 10, "title": "This House Would ban insurance coverage for sexual misconduct claims."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "This House Believes That leaders of an occupied nation should not assist the occupying powers in maintaining stability.", "shape": "dot", "size": 10, "title": "This House Believes That leaders of an occupied nation should not assist the occupying powers in maintaining stability."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "This House Would violate the ceasefire and kill the leaders", "shape": "dot", "size": 10, "title": "This House Would violate the ceasefire and kill the leaders"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "This House Would give victims of crimes significant power over sentencing", "shape": "dot", "size": 10, "title": "This House Would give victims of crimes significant power over sentencing"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "This house supports, where possible, the loved ones (eg family, close friends) of victims of serious criminal offences being involved in the sentencing of the perpetrator (eg in consultation with the judge).", "shape": "dot", "size": 10, "title": "This house supports, where possible, the loved ones (eg family, close friends) of victims of serious criminal offences being involved in the sentencing of the perpetrator (eg in consultation with the judge)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 103, "label": "This house would make development aid contingent on advancements in human rights", "shape": "dot", "size": 10, "title": "This house would make development aid contingent on advancements in human rights"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "This House Prefers a world with city-states governed by an elected global leadership to the current predominance of nation-states.", "shape": "dot", "size": 10, "title": "This House Prefers a world with city-states governed by an elected global leadership to the current predominance of nation-states."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "This House supports the outing of anti-LGBT+ conservative public figures (e.g.: politicians, celebrities)", "shape": "dot", "size": 10, "title": "This House supports the outing of anti-LGBT+ conservative public figures (e.g.: politicians, celebrities)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "This House Rejects the desexualisation of queer activism.", "shape": "dot", "size": 10, "title": "This House Rejects the desexualisation of queer activism."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 118, "label": "This House prefers a world without the Neuralink.", "shape": "dot", "size": 10, "title": "This House prefers a world without the Neuralink."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 112, "label": "This House would abolish the Olympic Games.", "shape": "dot", "size": 10, "title": "This House would abolish the Olympic Games."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "This House Believes That the international community should impose sanctions on Brazil, in order to curb their harmful environmental policies (eg deforestation, destruction of certain natural habitats, rampant pollution)", "shape": "dot", "size": 10, "title": "This House Believes That the international community should impose sanctions on Brazil, in order to curb their harmful environmental policies (eg deforestation, destruction of certain natural habitats, rampant pollution)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "This House, as the Transitional Military Council of Sudan, would pay the United States compensation in exchange for being removed from the \u2018State Sponsors of Terrorism\u2019 list.", "shape": "dot", "size": 10, "title": "This House, as the Transitional Military Council of Sudan, would pay the United States compensation in exchange for being removed from the \u2018State Sponsors of Terrorism\u2019 list."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "This House Prefers a world where hobbies and interests (e.g. sports, video games, and arts) are perceived to be primarily recreational in nature, rather than primarily competitive", "shape": "dot", "size": 10, "title": "This House Prefers a world where hobbies and interests (e.g. sports, video games, and arts) are perceived to be primarily recreational in nature, rather than primarily competitive"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "This house opposes the popular idealisation of the \u0027strong mother who can do it all\u0027", "shape": "dot", "size": 10, "title": "This house opposes the popular idealisation of the \u0027strong mother who can do it all\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "This House supports the piracy of academic resources in developing countries.", "shape": "dot", "size": 10, "title": "This House supports the piracy of academic resources in developing countries."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "Assuming feasibility, This House believes that the Holy Kaaba should be under the custody/guardianship of the OIC, instead of Saudi Arabia.", "shape": "dot", "size": 10, "title": "Assuming feasibility, This House believes that the Holy Kaaba should be under the custody/guardianship of the OIC, instead of Saudi Arabia."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "This house regrets the characterisation of a set of typical moods as \u201cnormal\u201d and mood disorders (e.g. depression, anxiety) as \u201cabnormal\u201d", "shape": "dot", "size": 10, "title": "This house regrets the characterisation of a set of typical moods as \u201cnormal\u201d and mood disorders (e.g. depression, anxiety) as \u201cabnormal\u201d"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "This House would abandon the use of foreign board examinations in Pakistan", "shape": "dot", "size": 10, "title": "This House would abandon the use of foreign board examinations in Pakistan"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "This House Believes That the foreign policy of the PTI Government has been a failure", "shape": "dot", "size": 10, "title": "This House Believes That the foreign policy of the PTI Government has been a failure"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "This House, as countries with aging population, prefers to accept immigrants over incentivizing citizen to have children", "shape": "dot", "size": 10, "title": "This House, as countries with aging population, prefers to accept immigrants over incentivizing citizen to have children"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "This House Would value witness testimonies higher than any material evidence on cases of sexual harassment", "shape": "dot", "size": 10, "title": "This House Would value witness testimonies higher than any material evidence on cases of sexual harassment"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "This house would outsource criminal justice policy to technocrats instead of elected representatives", "shape": "dot", "size": 10, "title": "This house would outsource criminal justice policy to technocrats instead of elected representatives"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "This house would establish free movement of labour in ASEAN", "shape": "dot", "size": 10, "title": "This house would establish free movement of labour in ASEAN"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "This House Believes That re-incarnation is better for the individual than an eternal after-life.", "shape": "dot", "size": 10, "title": "This House Believes That re-incarnation is better for the individual than an eternal after-life."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "This House Believes That Progressive Prosecutors do more harm than good to the progressive movement.", "shape": "dot", "size": 10, "title": "This House Believes That Progressive Prosecutors do more harm than good to the progressive movement."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "This House regrets the policy of lustration implemented in post-Communist nations in Europe.", "shape": "dot", "size": 10, "title": "This House regrets the policy of lustration implemented in post-Communist nations in Europe."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "This house, as the engines, would unionise and protest against the Fat Controller\u0027s \"Really Useful Engine Doctrine\"", "shape": "dot", "size": 10, "title": "This house, as the engines, would unionise and protest against the Fat Controller\u0027s \"Really Useful Engine Doctrine\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "Assuming Israel will accept, as Palestinian Authority, This House Would let go of the Gaza Strip in exchange of Palestinian independence in the West Bank", "shape": "dot", "size": 10, "title": "Assuming Israel will accept, as Palestinian Authority, This House Would let go of the Gaza Strip in exchange of Palestinian independence in the West Bank"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "This House Opposes the commercialization of Mindfulness", "shape": "dot", "size": 10, "title": "This House Opposes the commercialization of Mindfulness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "This House Would force individuals suspected of being a \"stolen child\" under the junta to undergo DNA testing to establish whether they are indeed stolen children.", "shape": "dot", "size": 10, "title": "This House Would force individuals suspected of being a \"stolen child\" under the junta to undergo DNA testing to establish whether they are indeed stolen children."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "This House Would transfer management of all water resources to an international body.", "shape": "dot", "size": 10, "title": "This House Would transfer management of all water resources to an international body."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "This House Would significantly decrease income tax rates for women", "shape": "dot", "size": 10, "title": "This House Would significantly decrease income tax rates for women"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "This House, as a Pacific island state, would reject Chinese developmental assistance", "shape": "dot", "size": 10, "title": "This House, as a Pacific island state, would reject Chinese developmental assistance"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "In post-conflict societies, This House prefers power-sharing agreements to unrestricted democracy.", "shape": "dot", "size": 10, "title": "In post-conflict societies, This House prefers power-sharing agreements to unrestricted democracy."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "Assuming full social distancing isn\u0027t possible: This house, upon finding an opportunity, would escape to another city which is not yet infected.", "shape": "dot", "size": 10, "title": "Assuming full social distancing isn\u0027t possible: This house, upon finding an opportunity, would escape to another city which is not yet infected."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "This house, without knowledge of who they will be, would prefer to be born into the 2nd Moon", "shape": "dot", "size": 10, "title": "This house, without knowledge of who they will be, would prefer to be born into the 2nd Moon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "This house regrets the rise of low-fee, easy-to-access financial market trading services (e.g. Robinhood)", "shape": "dot", "size": 10, "title": "This house regrets the rise of low-fee, easy-to-access financial market trading services (e.g. Robinhood)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "his house would impose an exit tax on citizens who choose to take up long term employment outside their country of origin.", "shape": "dot", "size": 10, "title": "his house would impose an exit tax on citizens who choose to take up long term employment outside their country of origin."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "This house would implement a strict deadline for the length of time that children can be in foster care before being placed in a permanent home (eg returned to birth parents, in guardianship or adopted)", "shape": "dot", "size": 10, "title": "This house would implement a strict deadline for the length of time that children can be in foster care before being placed in a permanent home (eg returned to birth parents, in guardianship or adopted)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "This house, as the EU, impose sanctions on countries with active prisoners of conscience.", "shape": "dot", "size": 10, "title": "This house, as the EU, impose sanctions on countries with active prisoners of conscience."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "This house would require test-status cricketing nations to play each other at equivalent rates (e.g. South Africa would be required to play Afghanistan and Ireland approximately as often as they play India)", "shape": "dot", "size": 10, "title": "This house would require test-status cricketing nations to play each other at equivalent rates (e.g. South Africa would be required to play Afghanistan and Ireland approximately as often as they play India)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "This House Would allow the use of performance enhancing drugs in professional sport", "shape": "dot", "size": 10, "title": "This House Would allow the use of performance enhancing drugs in professional sport"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "This House Believes That Ireland should significantly raise its corporate tax", "shape": "dot", "size": 10, "title": "This House Believes That Ireland should significantly raise its corporate tax"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "This House Would ban the breeding of wild animals for petting programs at zoos", "shape": "dot", "size": 10, "title": "This House Would ban the breeding of wild animals for petting programs at zoos"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "This House, as the WWE, would recognize Chris Benoit\u0027s achievements and induct him into the Hall of Fame.", "shape": "dot", "size": 10, "title": "This House, as the WWE, would recognize Chris Benoit\u0027s achievements and induct him into the Hall of Fame."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "This House Supports the US Federal/State governments\u0027 re-opening of their economies", "shape": "dot", "size": 10, "title": "This House Supports the US Federal/State governments\u0027 re-opening of their economies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "Assuming adequate child support services exist, This house would allow opponents of abortion to sign legally-binding contracts with pregnant women, in which they pay the pregnant women not to have an abortion", "shape": "dot", "size": 10, "title": "Assuming adequate child support services exist, This house would allow opponents of abortion to sign legally-binding contracts with pregnant women, in which they pay the pregnant women not to have an abortion"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "This House Believes That scientific literature should be free", "shape": "dot", "size": 10, "title": "This House Believes That scientific literature should be free"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "This House Believes That leaders of police forces should be elected by thelocal communities they serve", "shape": "dot", "size": 10, "title": "This House Believes That leaders of police forces should be elected by thelocal communities they serve"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "This House Opposes cancel culture", "shape": "dot", "size": 10, "title": "This House Opposes cancel culture"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "This House Believes That states formerly under the rule of the Soviet Union should NOT emphasize their history of struggle against Russian imperialism in constructing their national identity", "shape": "dot", "size": 10, "title": "This House Believes That states formerly under the rule of the Soviet Union should NOT emphasize their history of struggle against Russian imperialism in constructing their national identity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "This House would implement UBI in times of crisis", "shape": "dot", "size": 10, "title": "This House would implement UBI in times of crisis"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "This House prefers a world where the Assassins Brotherhood exists", "shape": "dot", "size": 10, "title": "This House prefers a world where the Assassins Brotherhood exists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 98, "label": "This House supports the decline of oil prices", "shape": "dot", "size": 10, "title": "This House supports the decline of oil prices"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 100, "label": "THW forcibly take owernership of privately-owned homes which are not lived in by their owners during periods of national housing shortages.", "shape": "dot", "size": 10, "title": "THW forcibly take owernership of privately-owned homes which are not lived in by their owners during periods of national housing shortages."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 101, "label": "This House, as Likud, regrets not removing Netanyahu as leader before the upcoming election.", "shape": "dot", "size": 10, "title": "This House, as Likud, regrets not removing Netanyahu as leader before the upcoming election."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 102, "label": "This house regrets hip-hop becoming mainstream", "shape": "dot", "size": 10, "title": "This house regrets hip-hop becoming mainstream"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 104, "label": "This house would allow patients suffering from early onset dementia to sign a binding will, stipulating that once their cognitive abilities have deteriorated beyond a certain point, they will be euthanised.", "shape": "dot", "size": 10, "title": "This house would allow patients suffering from early onset dementia to sign a binding will, stipulating that once their cognitive abilities have deteriorated beyond a certain point, they will be euthanised."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 105, "label": "This House believes that companies should adopt the practice of Radical Transparency.", "shape": "dot", "size": 10, "title": "This House believes that companies should adopt the practice of Radical Transparency."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 108, "label": "This House prefers a 2nd term of Donald Trump presidency over a Bernie Sanders presidency.", "shape": "dot", "size": 10, "title": "This House prefers a 2nd term of Donald Trump presidency over a Bernie Sanders presidency."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 109, "label": "This House would impose a BBC-style impartiality requirement on all news platforms.", "shape": "dot", "size": 10, "title": "This House would impose a BBC-style impartiality requirement on all news platforms."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 110, "label": "This House supports the rapid global elimination of both tariff and non-tariff barriers to free trade.", "shape": "dot", "size": 10, "title": "This House supports the rapid global elimination of both tariff and non-tariff barriers to free trade."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 113, "label": "This House believes that the Mexican government should adopt measures that enable one cartel to monopolise the drug market. (These measures can include but are not limited to: targeting enemy cartels; selective arrests; stopping military deployments to areas controlled by this cartel; and renouncing the headhunt on its current leaders.)", "shape": "dot", "size": 10, "title": "This House believes that the Mexican government should adopt measures that enable one cartel to monopolise the drug market. (These measures can include but are not limited to: targeting enemy cartels; selective arrests; stopping military deployments to areas controlled by this cartel; and renouncing the headhunt on its current leaders.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 114, "label": "In liberal democracies, This House would implement a Social Credit System.", "shape": "dot", "size": 10, "title": "In liberal democracies, This House would implement a Social Credit System."}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 41, "width": 0.1}, {"from": 0, "to": 63, "width": 0.1}, {"from": 1, "to": 40, "width": 0.1}, {"from": 1, "to": 79, "width": 0.1}, {"from": 2, "to": 13, "width": 0.1}, {"from": 2, "to": 39, "width": 0.1}, {"from": 2, "to": 85, "width": 0.1}, {"from": 3, "to": 23, "width": 0.1}, {"from": 5, "to": 75, "width": 0.1}, {"from": 7, "to": 14, "width": 0.1}, {"from": 7, "to": 18, "width": 0.1}, {"from": 7, "to": 75, "width": 0.1}, {"from": 10, "to": 90, "width": 0.1}, {"from": 10, "to": 107, "width": 0.1}, {"from": 11, "to": 30, "width": 0.1}, {"from": 13, "to": 21, "width": 0.1}, {"from": 13, "to": 39, "width": 0.1}, {"from": 14, "to": 28, "width": 0.1}, {"from": 14, "to": 75, "width": 0.1}, {"from": 15, "to": 28, "width": 0.1}, {"from": 15, "to": 30, "width": 0.1}, {"from": 15, "to": 37, "width": 0.1}, {"from": 15, "to": 49, "width": 0.1}, {"from": 15, "to": 95, "width": 0.1}, {"from": 15, "to": 99, "width": 0.1}, {"from": 17, "to": 95, "width": 0.1}, {"from": 22, "to": 51, "width": 0.1}, {"from": 22, "to": 63, "width": 0.1}, {"from": 26, "to": 119, "width": 0.1}, {"from": 27, "to": 120, "width": 0.1}, {"from": 28, "to": 30, "width": 0.1}, {"from": 28, "to": 75, "width": 0.1}, {"from": 28, "to": 99, "width": 0.1}, {"from": 30, "to": 76, "width": 0.1}, {"from": 33, "to": 46, "width": 0.1}, {"from": 33, "to": 67, "width": 0.1}, {"from": 33, "to": 68, "width": 0.1}, {"from": 34, "to": 67, "width": 0.1}, {"from": 34, "to": 68, "width": 0.1}, {"from": 37, "to": 80, "width": 0.1}, {"from": 37, "to": 95, "width": 0.1}, {"from": 37, "to": 111, "width": 0.1}, {"from": 40, "to": 79, "width": 0.1}, {"from": 40, "to": 119, "width": 0.1}, {"from": 41, "to": 117, "width": 0.1}, {"from": 42, "to": 43, "width": 0.1}, {"from": 44, "to": 121, "width": 0.1}, {"from": 45, "to": 116, "width": 0.1}, {"from": 46, "to": 67, "width": 0.1}, {"from": 46, "to": 68, "width": 0.1}, {"from": 46, "to": 115, "width": 0.1}, {"from": 47, "to": 106, "width": 0.1}, {"from": 47, "to": 115, "width": 0.1}, {"from": 49, "to": 89, "width": 0.1}, {"from": 51, "to": 63, "width": 0.1}, {"from": 52, "to": 95, "width": 0.1}, {"from": 53, "to": 57, "width": 0.1}, {"from": 53, "to": 90, "width": 0.1}, {"from": 53, "to": 107, "width": 0.1}, {"from": 55, "to": 81, "width": 0.1}, {"from": 60, "to": 69, "width": 0.1}, {"from": 63, "to": 103, "width": 0.1}, {"from": 64, "to": 89, "width": 0.1}, {"from": 67, "to": 68, "width": 0.1}, {"from": 67, "to": 95, "width": 0.1}, {"from": 67, "to": 117, "width": 0.1}, {"from": 68, "to": 95, "width": 0.1}, {"from": 68, "to": 117, "width": 0.1}, {"from": 87, "to": 88, "width": 0.1}, {"from": 89, "to": 116, "width": 0.1}, {"from": 89, "to": 118, "width": 0.1}, {"from": 106, "to": 111, "width": 0.1}, {"from": 106, "to": 112, "width": 0.1}, {"from": 106, "to": 115, "width": 0.1}, {"from": 106, "to": 117, "width": 0.1}, {"from": 111, "to": 115, "width": 0.1}, {"from": 116, "to": 118, "width": 0.1}, {"from": 119, "to": 120, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1980px;
+                 height: 1500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<div id="loadingBar">
+<div class="outerBorder">
+<div id="text">0%</div>
+<div id="border">
+<div id="bar"></div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THW forbid Western tech companies from accepting Chinese standards in order to access the Chinese market (e.g. Google accepting censorship, Apple moving servers to China etc)", "shape": "dot", "size": 10, "title": "THW forbid Western tech companies from accepting Chinese standards in order to access the Chinese market (e.g. Google accepting censorship, Apple moving servers to China etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "That liberal democracies should ban the products of CCP-linked tech giants (for example, BBK, HuaWei, and TenCent, which sell hardware, 5G, and apps like WeChat and TikTok)", "shape": "dot", "size": 10, "title": "That liberal democracies should ban the products of CCP-linked tech giants (for example, BBK, HuaWei, and TenCent, which sell hardware, 5G, and apps like WeChat and TikTok)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THBT the US should ban the sale of vital components for the manufacturing of electronic devices (eg semiconductors), which are produced in the US or use American technology or software*, to Huawei and other major Chinese companies. (*the vast majority of currently produced components)", "shape": "dot", "size": 10, "title": "THBT the US should ban the sale of vital components for the manufacturing of electronic devices (eg semiconductors), which are produced in the US or use American technology or software*, to Huawei and other major Chinese companies. (*the vast majority of currently produced components)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "THS the withdrawal of companies from Hong Kong", "shape": "dot", "size": 10, "title": "THS the withdrawal of companies from Hong Kong"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THW legalise grafitti", "shape": "dot", "size": 10, "title": "THW legalise grafitti"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "Assuming feasibility, THW legalise the buying and selling of citizenship", "shape": "dot", "size": 10, "title": "Assuming feasibility, THW legalise the buying and selling of citizenship"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT companies should pay an unemployment tax for automation", "shape": "dot", "size": 10, "title": "THBT companies should pay an unemployment tax for automation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "THBT, given feasibility, companies should move to work from home", "shape": "dot", "size": 10, "title": "THBT, given feasibility, companies should move to work from home"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THW ban the contracting of athletes for single games", "shape": "dot", "size": 10, "title": "THW ban the contracting of athletes for single games"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THBT players should get a cut of fantasy sports revenue as a performance bonus", "shape": "dot", "size": 10, "title": "THBT players should get a cut of fantasy sports revenue as a performance bonus"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "THW require sports teams to be owned by their local communities, as opposed to corporations or individuals", "shape": "dot", "size": 10, "title": "THW require sports teams to be owned by their local communities, as opposed to corporations or individuals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THBT that national boards should have the right to disallow a player from participating in international domestic sporting leagues", "shape": "dot", "size": 10, "title": "THBT that national boards should have the right to disallow a player from participating in international domestic sporting leagues"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "THW ban privately contracting the services of superheroes by individuals or companies", "shape": "dot", "size": 10, "title": "THW ban privately contracting the services of superheroes by individuals or companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "THS granting IP protection for sports moves", "shape": "dot", "size": 10, "title": "THS granting IP protection for sports moves"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 100, "label": "THW ban Zero Hour Contracts", "shape": "dot", "size": 10, "title": "THW ban Zero Hour Contracts"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THS state owned enterprises like Gazprom and Emirates sponsoring sports teams", "shape": "dot", "size": 10, "title": "THS state owned enterprises like Gazprom and Emirates sponsoring sports teams"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 113, "label": "THBT sporting teams should be owned by their fans", "shape": "dot", "size": 10, "title": "THBT sporting teams should be owned by their fans"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THR the reliance on Venture Capitalists in the tech/start-up landscape", "shape": "dot", "size": 10, "title": "THR the reliance on Venture Capitalists in the tech/start-up landscape"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THW offer significant tax breaks to venture capitalists investing in majority Black-owned businesses", "shape": "dot", "size": 10, "title": "THW offer significant tax breaks to venture capitalists investing in majority Black-owned businesses"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THBT all tech startups that become \"unicorns\" should be publicly traded", "shape": "dot", "size": 10, "title": "THBT all tech startups that become \"unicorns\" should be publicly traded"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THP a tech industry characterized by multiple smaller firms rather than one dominated by a few large players (e.g. Google Amazon Facebook in status quo)", "shape": "dot", "size": 10, "title": "THP a tech industry characterized by multiple smaller firms rather than one dominated by a few large players (e.g. Google Amazon Facebook in status quo)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "THW break up big tech companies", "shape": "dot", "size": 10, "title": "THW break up big tech companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "THO the rise of entrepreneurs selling off their businesses to large corporations.", "shape": "dot", "size": 10, "title": "THO the rise of entrepreneurs selling off their businesses to large corporations."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "THS sectoral bargaining", "shape": "dot", "size": 10, "title": "THS sectoral bargaining"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THO the News Media Bargaining Code", "shape": "dot", "size": 10, "title": "THO the News Media Bargaining Code"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "THS the inclusion of Investor-State Dispute Settlement (ISDS) mechanisms in free trade agreements", "shape": "dot", "size": 10, "title": "THS the inclusion of Investor-State Dispute Settlement (ISDS) mechanisms in free trade agreements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THW legalise and oblige employers to recognise minority unions", "shape": "dot", "size": 10, "title": "THW legalise and oblige employers to recognise minority unions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 112, "label": "THW mandate labor union membership in large companies", "shape": "dot", "size": 10, "title": "THW mandate labor union membership in large companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THW restrict foreign investors from buying domestic league teams", "shape": "dot", "size": 10, "title": "THW restrict foreign investors from buying domestic league teams"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THW transfer the majority ownership of professional sporting clubs to non-profit organizations managed by elected members within their local communities", "shape": "dot", "size": 10, "title": "THW transfer the majority ownership of professional sporting clubs to non-profit organizations managed by elected members within their local communities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 114, "label": "THBT a North American sports league, in seeking to expand beyond North America, should prioritize access and development to the Latin American market over the Chinese market", "shape": "dot", "size": 10, "title": "THBT a North American sports league, in seeking to expand beyond North America, should prioritize access and development to the Latin American market over the Chinese market"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "TH as a new follower of a major sporting league (i.e. EPL, NFL) would choose to follow a less successful team from one\u0027s local area than a more successful but not geographically close team", "shape": "dot", "size": 10, "title": "TH as a new follower of a major sporting league (i.e. EPL, NFL) would choose to follow a less successful team from one\u0027s local area than a more successful but not geographically close team"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THW legalize the buying and selling of one\u2019s remaining lifetime years.", "shape": "dot", "size": 10, "title": "THW legalize the buying and selling of one\u2019s remaining lifetime years."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THW restrict cities from offering tax credits and other incentives to attract large companies", "shape": "dot", "size": 10, "title": "THW restrict cities from offering tax credits and other incentives to attract large companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THW prohibit cities from offering tax credits and other incentives to attract large companies", "shape": "dot", "size": 10, "title": "THW prohibit cities from offering tax credits and other incentives to attract large companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "In areas with rapidly rising property prices, THW suspend all restrictions on property development that are not health and safety requirements (for example, environmental zoning regulations, building height restrictions, and regulations on the appearance of buildings)", "shape": "dot", "size": 10, "title": "In areas with rapidly rising property prices, THW suspend all restrictions on property development that are not health and safety requirements (for example, environmental zoning regulations, building height restrictions, and regulations on the appearance of buildings)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THW place a time limit on all private land ownership in major cities.", "shape": "dot", "size": 10, "title": "THW place a time limit on all private land ownership in major cities."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 104, "label": "THW allow companies to buy the rights to govern economically failing cities.", "shape": "dot", "size": 10, "title": "THW allow companies to buy the rights to govern economically failing cities."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "TH, as fans of the club, supports an imminent takeover by the Saudi Arabian Delegated Treasury Agency.", "shape": "dot", "size": 10, "title": "TH, as fans of the club, supports an imminent takeover by the Saudi Arabian Delegated Treasury Agency."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "TH, as fans of the club, supports a takeover by the Saudi Arabian Public Investment Fund.", "shape": "dot", "size": 10, "title": "TH, as fans of the club, supports a takeover by the Saudi Arabian Public Investment Fund."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THW abolish pharmaceutical patents in favour of subsidies, tax breaks and public interest grants", "shape": "dot", "size": 10, "title": "THW abolish pharmaceutical patents in favour of subsidies, tax breaks and public interest grants"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THW abolish pharmaceutical patents in favour of subsidies, tax breaks and public interest grants", "shape": "dot", "size": 10, "title": "THW abolish pharmaceutical patents in favour of subsidies, tax breaks and public interest grants"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THW abolish all patents", "shape": "dot", "size": 10, "title": "THW abolish all patents"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "THBT the government should offer cash compensation for the creation of pharmaceuticals to replace the patent system for pharmaceuticals", "shape": "dot", "size": 10, "title": "THBT the government should offer cash compensation for the creation of pharmaceuticals to replace the patent system for pharmaceuticals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "THW break up large pharmaceutical firms", "shape": "dot", "size": 10, "title": "THW break up large pharmaceutical firms"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THW ban the trade of Carbon Quotas", "shape": "dot", "size": 10, "title": "THW ban the trade of Carbon Quotas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "That we should ban high frequency trading", "shape": "dot", "size": 10, "title": "That we should ban high frequency trading"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THS the adoption of variable minimum wage laws", "shape": "dot", "size": 10, "title": "THS the adoption of variable minimum wage laws"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THW allow individual workers to waive their labour rights (e.g., days off, hours limits, parental leave) in exchange for additional pay.", "shape": "dot", "size": 10, "title": "THW allow individual workers to waive their labour rights (e.g., days off, hours limits, parental leave) in exchange for additional pay."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "THP a system of no labour regulations to that of extensive labour regulations (minimum wage, job security legislation, etc.)", "shape": "dot", "size": 10, "title": "THP a system of no labour regulations to that of extensive labour regulations (minimum wage, job security legislation, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THW require all art institutions to dedicate a significant portion of funding to commissioning art from new artists", "shape": "dot", "size": 10, "title": "THW require all art institutions to dedicate a significant portion of funding to commissioning art from new artists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THBT artists should have full ownership of their masters", "shape": "dot", "size": 10, "title": "THBT artists should have full ownership of their masters"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THR multinational corporations paying protection fees to militant groups", "shape": "dot", "size": 10, "title": "THR multinational corporations paying protection fees to militant groups"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 99, "label": "THS excess profit taxes on corporations that derive a significant profit from a pandemic", "shape": "dot", "size": 10, "title": "THS excess profit taxes on corporations that derive a significant profit from a pandemic"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THW ban senior corporate officials (e.g. CEOs, CFOs, COOs etc) from serving in their role for more than four years", "shape": "dot", "size": 10, "title": "THW ban senior corporate officials (e.g. CEOs, CFOs, COOs etc) from serving in their role for more than four years"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THW tax male consumer more when they buy services/products from corporations with huge gender pay-gaps", "shape": "dot", "size": 10, "title": "THW tax male consumer more when they buy services/products from corporations with huge gender pay-gaps"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "THBT governments should impose strict gender quotas at the level of board of directors in corporations", "shape": "dot", "size": 10, "title": "THBT governments should impose strict gender quotas at the level of board of directors in corporations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THW ban the consolidation of newspapers by a single entity (eg private equity firms, single media companies)", "shape": "dot", "size": 10, "title": "THW ban the consolidation of newspapers by a single entity (eg private equity firms, single media companies)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "This House Would ban ownership consolidation of newspapers by a single entity e.g. private equity firms, single media company", "shape": "dot", "size": 10, "title": "This House Would ban ownership consolidation of newspapers by a single entity e.g. private equity firms, single media company"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "That we should ban mergers and acquisitions of mass media companies.", "shape": "dot", "size": 10, "title": "That we should ban mergers and acquisitions of mass media companies."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THBT governments should outsource the regulation of big tech giants to technocrats", "shape": "dot", "size": 10, "title": "THBT governments should outsource the regulation of big tech giants to technocrats"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "TH, as the US, would ban TikTok regardless of whether they comply with the data restructuring demands", "shape": "dot", "size": 10, "title": "TH, as the US, would ban TikTok regardless of whether they comply with the data restructuring demands"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 111, "label": "When tech companies own platform utilities and platform products, THW break them up.", "shape": "dot", "size": 10, "title": "When tech companies own platform utilities and platform products, THW break them up."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THW ban lifestyle clauses in prenupital agreements", "shape": "dot", "size": 10, "title": "THW ban lifestyle clauses in prenupital agreements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THW ban essential service workers from striking", "shape": "dot", "size": 10, "title": "THW ban essential service workers from striking"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THW grant places (cities, states etc.) image rights over their representation in commercial works.", "shape": "dot", "size": 10, "title": "THW grant places (cities, states etc.) image rights over their representation in commercial works."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "THW ban investors from suing countries on the grounds of indirect expropriation", "shape": "dot", "size": 10, "title": "THW ban investors from suing countries on the grounds of indirect expropriation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "THW ban foreign investment on Indonesia tech startups", "shape": "dot", "size": 10, "title": "THW ban foreign investment on Indonesia tech startups"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THO copyright protection of the music industry", "shape": "dot", "size": 10, "title": "THO copyright protection of the music industry"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "THR the decision of the NBA players to resume the season", "shape": "dot", "size": 10, "title": "THR the decision of the NBA players to resume the season"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "That we would abolish the \u2018one-year-out\u2019 rule in the NBA.", "shape": "dot", "size": 10, "title": "That we would abolish the \u2018one-year-out\u2019 rule in the NBA."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 109, "label": "THW require companies valued at $1B or above to trade publicly*", "shape": "dot", "size": 10, "title": "THW require companies valued at $1B or above to trade publicly*"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "That we would ban the short selling of shares", "shape": "dot", "size": 10, "title": "That we would ban the short selling of shares"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "That we would ban Microtransactions in video games", "shape": "dot", "size": 10, "title": "That we would ban Microtransactions in video games"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "That we should limit the trading of individual shares and derivative products to licensed professionals.", "shape": "dot", "size": 10, "title": "That we should limit the trading of individual shares and derivative products to licensed professionals."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "That we should ban derivative markets", "shape": "dot", "size": 10, "title": "That we should ban derivative markets"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "That we should ban hedge funds", "shape": "dot", "size": 10, "title": "That we should ban hedge funds"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 107, "label": "That we would abolish corporate tax", "shape": "dot", "size": 10, "title": "That we would abolish corporate tax"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 108, "label": "That we would create financial incentives for companies to expose the law breaking of their competitors.", "shape": "dot", "size": 10, "title": "That we would create financial incentives for companies to expose the law breaking of their competitors."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THBT Indonesia\u0027s state-owned enterprises should solely focus on distributive function (i.e. distribute services, provide job) even at the expense on revenue generation", "shape": "dot", "size": 10, "title": "THBT Indonesia\u0027s state-owned enterprises should solely focus on distributive function (i.e. distribute services, provide job) even at the expense on revenue generation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "THR Celebrity CEOs", "shape": "dot", "size": 10, "title": "THR Celebrity CEOs"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "THBT X should take the job of CEO", "shape": "dot", "size": 10, "title": "THBT X should take the job of CEO"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THW ban the buying and selling of emotional services", "shape": "dot", "size": 10, "title": "THW ban the buying and selling of emotional services"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "THBT hacking is an acceptable form of protest against large corporations.", "shape": "dot", "size": 10, "title": "THBT hacking is an acceptable form of protest against large corporations."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "THW legalize \"hacking back\" in the private sector", "shape": "dot", "size": 10, "title": "THW legalize \"hacking back\" in the private sector"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "THO the use of deferred prosecution agreements for large companies", "shape": "dot", "size": 10, "title": "THO the use of deferred prosecution agreements for large companies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THBT BTS should boycott the 2021 Grammy Awards", "shape": "dot", "size": 10, "title": "THBT BTS should boycott the 2021 Grammy Awards"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "TH, believes that Google should allow fantasy sport apps like Dream 11 to be hosted on Playstore in India", "shape": "dot", "size": 10, "title": "TH, believes that Google should allow fantasy sport apps like Dream 11 to be hosted on Playstore in India"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "TH would prefer a maximum of 5 overseas players in a squad instead of 4 currently.", "shape": "dot", "size": 10, "title": "TH would prefer a maximum of 5 overseas players in a squad instead of 4 currently."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "TH, as Colombia, would legalise all drugs", "shape": "dot", "size": 10, "title": "TH, as Colombia, would legalise all drugs"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THS the monetisation of all derivative fanworks", "shape": "dot", "size": 10, "title": "THS the monetisation of all derivative fanworks"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THBT art museums should not hold reserve collections larger than 20% of total volume of collection", "shape": "dot", "size": 10, "title": "THBT art museums should not hold reserve collections larger than 20% of total volume of collection"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THS the Open Access movement", "shape": "dot", "size": 10, "title": "THS the Open Access movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THS the League One salary cap", "shape": "dot", "size": 10, "title": "THS the League One salary cap"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THBT India should abolish all limits on MPs\u0027 defections", "shape": "dot", "size": 10, "title": "THBT India should abolish all limits on MPs\u0027 defections"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THW oblige all profitable companies to give minimum 50% dividend payout ratio", "shape": "dot", "size": 10, "title": "THW oblige all profitable companies to give minimum 50% dividend payout ratio"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THW ban all forms of loot boxes in online games", "shape": "dot", "size": 10, "title": "THW ban all forms of loot boxes in online games"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "That we prefer larger, more spaced apart patches to regular, smaller patches in esports games", "shape": "dot", "size": 10, "title": "That we prefer larger, more spaced apart patches to regular, smaller patches in esports games"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "In the wake of Jacob Blake shooting, As African-American athletes in the NBPA, This house would boycott the remaining of the NBA season", "shape": "dot", "size": 10, "title": "In the wake of Jacob Blake shooting, As African-American athletes in the NBPA, This house would boycott the remaining of the NBA season"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "THR the rise of the commercialisation of surrogacy in developing countries", "shape": "dot", "size": 10, "title": "THR the rise of the commercialisation of surrogacy in developing countries"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THW ban corporate sponsorship of academic research", "shape": "dot", "size": 10, "title": "THW ban corporate sponsorship of academic research"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "TH, as X, would not accept the offer", "shape": "dot", "size": 10, "title": "TH, as X, would not accept the offer"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "THW introduce significant \"cost caps\" in sports", "shape": "dot", "size": 10, "title": "THW introduce significant \"cost caps\" in sports"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "That we would require companies to use absolute blind recruitment", "shape": "dot", "size": 10, "title": "That we would require companies to use absolute blind recruitment"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "That we should reallocate public investment funds from start-ups to traditional small and medium-sized enterprises.", "shape": "dot", "size": 10, "title": "That we should reallocate public investment funds from start-ups to traditional small and medium-sized enterprises."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THS closed shop arrangements", "shape": "dot", "size": 10, "title": "THS closed shop arrangements"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "THR World Athletics\u0027 decision to put an indefinite moratorium on future advances in shoe technology.", "shape": "dot", "size": 10, "title": "THR World Athletics\u0027 decision to put an indefinite moratorium on future advances in shoe technology."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "That developing countries should ban the sale of GMO products", "shape": "dot", "size": 10, "title": "That developing countries should ban the sale of GMO products"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 98, "label": "THW spend all of Jeff Bezos\u0027s money", "shape": "dot", "size": 10, "title": "THW spend all of Jeff Bezos\u0027s money"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 101, "label": "THW not subsidize national flag carrier airlines", "shape": "dot", "size": 10, "title": "THW not subsidize national flag carrier airlines"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 102, "label": "THW nationalise the Space industry", "shape": "dot", "size": 10, "title": "THW nationalise the Space industry"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 103, "label": "THS online piracy in developing countries", "shape": "dot", "size": 10, "title": "THS online piracy in developing countries"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 105, "label": "That, assuming it were practicable, sports teams or people that develop novel strategies or techniques should be able to \u201ccopyright\u201d them for two seasons after they are first used successfully.", "shape": "dot", "size": 10, "title": "That, assuming it were practicable, sports teams or people that develop novel strategies or techniques should be able to \u201ccopyright\u201d them for two seasons after they are first used successfully."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 106, "label": "That one should not offer to \u2018give exposure\u2019 to gain discounted goods or services from creatives.", "shape": "dot", "size": 10, "title": "That one should not offer to \u2018give exposure\u2019 to gain discounted goods or services from creatives."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 110, "label": "THS the \"Kingpin\" strategy in combatting drug cartels", "shape": "dot", "size": 10, "title": "THS the \"Kingpin\" strategy in combatting drug cartels"}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 32, "width": 0.1}, {"from": 0, "to": 66, "width": 0.1}, {"from": 0, "to": 82, "width": 0.1}, {"from": 2, "to": 12, "width": 0.1}, {"from": 3, "to": 83, "width": 0.1}, {"from": 4, "to": 6, "width": 0.1}, {"from": 4, "to": 33, "width": 0.1}, {"from": 4, "to": 71, "width": 0.1}, {"from": 4, "to": 88, "width": 0.1}, {"from": 4, "to": 93, "width": 0.1}, {"from": 4, "to": 100, "width": 0.1}, {"from": 5, "to": 33, "width": 0.1}, {"from": 5, "to": 113, "width": 0.1}, {"from": 7, "to": 36, "width": 0.1}, {"from": 7, "to": 52, "width": 0.1}, {"from": 7, "to": 62, "width": 0.1}, {"from": 7, "to": 85, "width": 0.1}, {"from": 7, "to": 87, "width": 0.1}, {"from": 8, "to": 44, "width": 0.1}, {"from": 8, "to": 45, "width": 0.1}, {"from": 9, "to": 112, "width": 0.1}, {"from": 10, "to": 33, "width": 0.1}, {"from": 10, "to": 69, "width": 0.1}, {"from": 10, "to": 71, "width": 0.1}, {"from": 10, "to": 114, "width": 0.1}, {"from": 11, "to": 33, "width": 0.1}, {"from": 11, "to": 113, "width": 0.1}, {"from": 11, "to": 114, "width": 0.1}, {"from": 12, "to": 57, "width": 0.1}, {"from": 13, "to": 26, "width": 0.1}, {"from": 13, "to": 30, "width": 0.1}, {"from": 13, "to": 39, "width": 0.1}, {"from": 13, "to": 104, "width": 0.1}, {"from": 14, "to": 65, "width": 0.1}, {"from": 15, "to": 51, "width": 0.1}, {"from": 15, "to": 68, "width": 0.1}, {"from": 15, "to": 70, "width": 0.1}, {"from": 15, "to": 94, "width": 0.1}, {"from": 16, "to": 77, "width": 0.1}, {"from": 20, "to": 38, "width": 0.1}, {"from": 20, "to": 50, "width": 0.1}, {"from": 21, "to": 48, "width": 0.1}, {"from": 22, "to": 99, "width": 0.1}, {"from": 23, "to": 88, "width": 0.1}, {"from": 26, "to": 30, "width": 0.1}, {"from": 26, "to": 39, "width": 0.1}, {"from": 26, "to": 104, "width": 0.1}, {"from": 27, "to": 34, "width": 0.1}, {"from": 29, "to": 72, "width": 0.1}, {"from": 29, "to": 79, "width": 0.1}, {"from": 30, "to": 39, "width": 0.1}, {"from": 30, "to": 104, "width": 0.1}, {"from": 32, "to": 42, "width": 0.1}, {"from": 32, "to": 58, "width": 0.1}, {"from": 32, "to": 66, "width": 0.1}, {"from": 32, "to": 79, "width": 0.1}, {"from": 32, "to": 111, "width": 0.1}, {"from": 33, "to": 69, "width": 0.1}, {"from": 33, "to": 71, "width": 0.1}, {"from": 33, "to": 113, "width": 0.1}, {"from": 33, "to": 114, "width": 0.1}, {"from": 35, "to": 100, "width": 0.1}, {"from": 36, "to": 87, "width": 0.1}, {"from": 36, "to": 99, "width": 0.1}, {"from": 38, "to": 50, "width": 0.1}, {"from": 38, "to": 53, "width": 0.1}, {"from": 38, "to": 100, "width": 0.1}, {"from": 38, "to": 112, "width": 0.1}, {"from": 39, "to": 104, "width": 0.1}, {"from": 40, "to": 104, "width": 0.1}, {"from": 41, "to": 59, "width": 0.1}, {"from": 42, "to": 85, "width": 0.1}, {"from": 46, "to": 48, "width": 0.1}, {"from": 47, "to": 76, "width": 0.1}, {"from": 51, "to": 68, "width": 0.1}, {"from": 51, "to": 70, "width": 0.1}, {"from": 51, "to": 94, "width": 0.1}, {"from": 52, "to": 85, "width": 0.1}, {"from": 52, "to": 109, "width": 0.1}, {"from": 53, "to": 88, "width": 0.1}, {"from": 53, "to": 100, "width": 0.1}, {"from": 53, "to": 112, "width": 0.1}, {"from": 54, "to": 55, "width": 0.1}, {"from": 54, "to": 77, "width": 0.1}, {"from": 54, "to": 78, "width": 0.1}, {"from": 54, "to": 79, "width": 0.1}, {"from": 54, "to": 95, "width": 0.1}, {"from": 54, "to": 96, "width": 0.1}, {"from": 54, "to": 107, "width": 0.1}, {"from": 54, "to": 108, "width": 0.1}, {"from": 55, "to": 77, "width": 0.1}, {"from": 55, "to": 78, "width": 0.1}, {"from": 55, "to": 79, "width": 0.1}, {"from": 55, "to": 95, "width": 0.1}, {"from": 55, "to": 96, "width": 0.1}, {"from": 55, "to": 107, "width": 0.1}, {"from": 55, "to": 108, "width": 0.1}, {"from": 59, "to": 61, "width": 0.1}, {"from": 62, "to": 85, "width": 0.1}, {"from": 67, "to": 84, "width": 0.1}, {"from": 68, "to": 70, "width": 0.1}, {"from": 68, "to": 107, "width": 0.1}, {"from": 69, "to": 113, "width": 0.1}, {"from": 70, "to": 94, "width": 0.1}, {"from": 71, "to": 93, "width": 0.1}, {"from": 71, "to": 113, "width": 0.1}, {"from": 72, "to": 79, "width": 0.1}, {"from": 73, "to": 88, "width": 0.1}, {"from": 77, "to": 78, "width": 0.1}, {"from": 77, "to": 79, "width": 0.1}, {"from": 77, "to": 95, "width": 0.1}, {"from": 77, "to": 96, "width": 0.1}, {"from": 77, "to": 108, "width": 0.1}, {"from": 78, "to": 79, "width": 0.1}, {"from": 78, "to": 95, "width": 0.1}, {"from": 78, "to": 96, "width": 0.1}, {"from": 78, "to": 107, "width": 0.1}, {"from": 78, "to": 108, "width": 0.1}, {"from": 78, "to": 109, "width": 0.1}, {"from": 79, "to": 95, "width": 0.1}, {"from": 79, "to": 96, "width": 0.1}, {"from": 79, "to": 107, "width": 0.1}, {"from": 79, "to": 108, "width": 0.1}, {"from": 85, "to": 94, "width": 0.1}, {"from": 85, "to": 111, "width": 0.1}, {"from": 86, "to": 91, "width": 0.1}, {"from": 87, "to": 99, "width": 0.1}, {"from": 88, "to": 100, "width": 0.1}, {"from": 89, "to": 108, "width": 0.1}, {"from": 95, "to": 96, "width": 0.1}, {"from": 95, "to": 107, "width": 0.1}, {"from": 95, "to": 108, "width": 0.1}, {"from": 96, "to": 107, "width": 0.1}, {"from": 96, "to": 108, "width": 0.1}, {"from": 99, "to": 107, "width": 0.1}, {"from": 107, "to": 108, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1980px;
+                 height: 1500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<div id="loadingBar">
+<div class="outerBorder">
+<div id="text">0%</div>
+<div id="border">
+<div id="bar"></div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "Assuming Leni Robredo runs in the next presidential elections, THBT it is in the best interest of Leftist political parties in the Philippines to unite to support Leni Robredo rather than fielding their own presidential candidates", "shape": "dot", "size": 10, "title": "Assuming Leni Robredo runs in the next presidential elections, THBT it is in the best interest of Leftist political parties in the Philippines to unite to support Leni Robredo rather than fielding their own presidential candidates"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "TH, as Len Robredo, would take a more aggressive stance against Duterte", "shape": "dot", "size": 10, "title": "TH, as Len Robredo, would take a more aggressive stance against Duterte"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THBT monarchies have no place in modern politivs", "shape": "dot", "size": 10, "title": "THBT monarchies have no place in modern politivs"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "THBT monarchies have no place in modern politics", "shape": "dot", "size": 10, "title": "THBT monarchies have no place in modern politics"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THBT opposition parties in India should begin actively opposing the anti-Muslim policies of the BJP", "shape": "dot", "size": 10, "title": "THBT opposition parties in India should begin actively opposing the anti-Muslim policies of the BJP"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THBT progressives should support the rising popularity of islamic groups/parties (PKS,FPI) that advocate against the increasingly neo-liberal government", "shape": "dot", "size": 10, "title": "THBT progressives should support the rising popularity of islamic groups/parties (PKS,FPI) that advocate against the increasingly neo-liberal government"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THW ban pre-election polls", "shape": "dot", "size": 10, "title": "THW ban pre-election polls"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "THW allow \"negative voting\"", "shape": "dot", "size": 10, "title": "THW allow \"negative voting\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THW ban public debates between candidates in the runup to elections", "shape": "dot", "size": 10, "title": "THW ban public debates between candidates in the runup to elections"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THW strip the voting rights of individuals that did not vote in more than 2  consecutive election cycles", "shape": "dot", "size": 10, "title": "THW strip the voting rights of individuals that did not vote in more than 2  consecutive election cycles"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THBT Central Bank leaders should be elected by an independent panel of experts, rather than selected by politicians", "shape": "dot", "size": 10, "title": "THBT Central Bank leaders should be elected by an independent panel of experts, rather than selected by politicians"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "THBT Dalit leaders should work within existing mainstream parties rather than forming their own independent parties", "shape": "dot", "size": 10, "title": "THBT Dalit leaders should work within existing mainstream parties rather than forming their own independent parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "THBT Dalit Leaders should work within existing mainstream political parties rather than forming their own independent parties", "shape": "dot", "size": 10, "title": "THBT Dalit Leaders should work within existing mainstream political parties rather than forming their own independent parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "THBT the heads of central banks (eg: the Federal Reserve, the European Central Bank) should be democratically elected", "shape": "dot", "size": 10, "title": "THBT the heads of central banks (eg: the Federal Reserve, the European Central Bank) should be democratically elected"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THP a world in which moderate US Republican \u0026 Democrat representatives form their own political parties", "shape": "dot", "size": 10, "title": "THP a world in which moderate US Republican \u0026 Democrat representatives form their own political parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THBT the anti-establishment factions (e.g. Donald Trump, the Progressive Dems Squad) should create their own political party and pursue the establishment of a multi-party system in the United States", "shape": "dot", "size": 10, "title": "THBT the anti-establishment factions (e.g. Donald Trump, the Progressive Dems Squad) should create their own political party and pursue the establishment of a multi-party system in the United States"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 95, "label": "THS two party political systems over multiparty political systems", "shape": "dot", "size": 10, "title": "THS two party political systems over multiparty political systems"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "As a post colonial state, THS a benevolent dictatorship over a representative democracy", "shape": "dot", "size": 10, "title": "As a post colonial state, THS a benevolent dictatorship over a representative democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "In areas characterized by significant ethnic and religious cleavages, THP a system of delegative democracy over a system of collusive democracy", "shape": "dot", "size": 10, "title": "In areas characterized by significant ethnic and religious cleavages, THP a system of delegative democracy over a system of collusive democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "TH, as the Republican Party, would publicly support Donald Trump\u0027s refusal to concede the 2020 Presidential Elections", "shape": "dot", "size": 10, "title": "TH, as the Republican Party, would publicly support Donald Trump\u0027s refusal to concede the 2020 Presidential Elections"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "TH, as the Republican Party, Would Adopt A Political Strategy Of Distancing The Party Away From Trump", "shape": "dot", "size": 10, "title": "TH, as the Republican Party, Would Adopt A Political Strategy Of Distancing The Party Away From Trump"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "TH, as the Republican Party, would confirm Trump\u0027s nominee to the Supreme Court before the November election", "shape": "dot", "size": 10, "title": "TH, as the Republican Party, would confirm Trump\u0027s nominee to the Supreme Court before the November election"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THBT heads of state in democratic nations should be limited to one term in office", "shape": "dot", "size": 10, "title": "THBT heads of state in democratic nations should be limited to one term in office"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THW abolish the party whip", "shape": "dot", "size": 10, "title": "THW abolish the party whip"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THW abolish youth wings of political parties", "shape": "dot", "size": 10, "title": "THW abolish youth wings of political parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THBT pro-democratic opposition activists in semi-authoritarian states should not seek political office in the current regime", "shape": "dot", "size": 10, "title": "THBT pro-democratic opposition activists in semi-authoritarian states should not seek political office in the current regime"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "THBT human rights activists in post-conflict societies should neither advocate for political parties nor run for election in the transition to democracy", "shape": "dot", "size": 10, "title": "THBT human rights activists in post-conflict societies should neither advocate for political parties nor run for election in the transition to democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 104, "label": "THBT technocrats (highly educated and skilled experts) within authoritarian states should collectively refuse to work with/for the government", "shape": "dot", "size": 10, "title": "THBT technocrats (highly educated and skilled experts) within authoritarian states should collectively refuse to work with/for the government"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 106, "label": "THW not allow revolutionary leaders and their families in post-conflict societies to run for political office", "shape": "dot", "size": 10, "title": "THW not allow revolutionary leaders and their families in post-conflict societies to run for political office"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 109, "label": "TH as a young individual in an authoritarian country who wants to improve their society would seek to do so by joining the ruling party as opposed to operating outside the establishment.", "shape": "dot", "size": 10, "title": "TH as a young individual in an authoritarian country who wants to improve their society would seek to do so by joining the ruling party as opposed to operating outside the establishment."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "In emerging democracies, THS capping the maximum number of seats in parliament that a political party can get.", "shape": "dot", "size": 10, "title": "In emerging democracies, THS capping the maximum number of seats in parliament that a political party can get."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THP a parliamentary electoral system which includes a constituency link", "shape": "dot", "size": 10, "title": "THP a parliamentary electoral system which includes a constituency link"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "THBT parliamentary ridings and congressional districts should be drawn to maximize electoral competitiveness.", "shape": "dot", "size": 10, "title": "THBT parliamentary ridings and congressional districts should be drawn to maximize electoral competitiveness."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 116, "label": "In countries with large immigrant populations, THW reserve seats for foreign individuals in parliament", "shape": "dot", "size": 10, "title": "In countries with large immigrant populations, THW reserve seats for foreign individuals in parliament"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THBT it is in the interest of left-wing Democrats to refrain from public criticism of Joe Biden\u0027s administration", "shape": "dot", "size": 10, "title": "THBT it is in the interest of left-wing Democrats to refrain from public criticism of Joe Biden\u0027s administration"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "As left-wing democrats, this house regrets Joe Biden\u0027s decision to choose Kamala Harris as VP Candidate", "shape": "dot", "size": 10, "title": "As left-wing democrats, this house regrets Joe Biden\u0027s decision to choose Kamala Harris as VP Candidate"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "TH, as the Republican Party, prefers a depiction of Joe Biden as an establishment centrist, as opposed to a pawn of the progressive Left.", "shape": "dot", "size": 10, "title": "TH, as the Republican Party, prefers a depiction of Joe Biden as an establishment centrist, as opposed to a pawn of the progressive Left."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 111, "label": "THBT progressives are justified in refusing to endorse Joe Biden until he adopts significantly more progressive policies in his campaign platform", "shape": "dot", "size": 10, "title": "THBT progressives are justified in refusing to endorse Joe Biden until he adopts significantly more progressive policies in his campaign platform"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 112, "label": "THBT progressives are justified in refusing to endorse Joe Biden until he adopts significantly more progressive policies in his campaign platform", "shape": "dot", "size": 10, "title": "THBT progressives are justified in refusing to endorse Joe Biden until he adopts significantly more progressive policies in his campaign platform"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "THBT the United States should implement quotas for their non-male candidates in presidential primaries", "shape": "dot", "size": 10, "title": "THBT the United States should implement quotas for their non-male candidates in presidential primaries"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 100, "label": "THW abolish open primaries for presidential candidates in the US", "shape": "dot", "size": 10, "title": "THW abolish open primaries for presidential candidates in the US"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THW implement a system of voter insurance for national elections", "shape": "dot", "size": 10, "title": "THW implement a system of voter insurance for national elections"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "Assuming feasibility, THBT citizens from other countries should be given the right to vote in the elections of hegemonies", "shape": "dot", "size": 10, "title": "Assuming feasibility, THBT citizens from other countries should be given the right to vote in the elections of hegemonies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THW apply a weight to election votes that is inversely proportional to the wealth of the voter", "shape": "dot", "size": 10, "title": "THW apply a weight to election votes that is inversely proportional to the wealth of the voter"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "THW make voting mandatory", "shape": "dot", "size": 10, "title": "THW make voting mandatory"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "THW legalize betting on electoral processes", "shape": "dot", "size": 10, "title": "THW legalize betting on electoral processes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "THW give people additional votes in proportion to their economic disadvantage", "shape": "dot", "size": 10, "title": "THW give people additional votes in proportion to their economic disadvantage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 108, "label": "THW implement a weighted voting system, where your vote counts less and less the older you get", "shape": "dot", "size": 10, "title": "THW implement a weighted voting system, where your vote counts less and less the older you get"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 124, "label": "THP a system where campaign donations are banned and all candidates for an election are equally publicly funded to a world that allows donations to candidates and parties", "shape": "dot", "size": 10, "title": "THP a system where campaign donations are banned and all candidates for an election are equally publicly funded to a world that allows donations to candidates and parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "Post-2020 election, TH as the US Democratic party would choose to focus less on identity politics instead of pandering to the woke community\"", "shape": "dot", "size": 10, "title": "Post-2020 election, TH as the US Democratic party would choose to focus less on identity politics instead of pandering to the woke community\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "Post the 2020 elections, and regardless of its outcomes, THBT the progressive faction of the Democrat Party should split to form a new major party", "shape": "dot", "size": 10, "title": "Post the 2020 elections, and regardless of its outcomes, THBT the progressive faction of the Democrat Party should split to form a new major party"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "THBT individuals should vote based on their principles rather than on the electability of the candidates (eg by vote-spoiling in the #undirosak movement, or by voting for fringe candidates)", "shape": "dot", "size": 10, "title": "THBT individuals should vote based on their principles rather than on the electability of the candidates (eg by vote-spoiling in the #undirosak movement, or by voting for fringe candidates)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "Assuming that social, political, and economic capital can be quantified, THW make the weight of votes inversely proportional to a person\u0027s capital", "shape": "dot", "size": 10, "title": "Assuming that social, political, and economic capital can be quantified, THW make the weight of votes inversely proportional to a person\u0027s capital"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "THBT charities and non-profit organizations should be given votes in elections proportional to the amount of donations they receive.", "shape": "dot", "size": 10, "title": "THBT charities and non-profit organizations should be given votes in elections proportional to the amount of donations they receive."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "TH, as the Democratic Party, would seek to expand the number of justices on the supreme court.", "shape": "dot", "size": 10, "title": "TH, as the Democratic Party, would seek to expand the number of justices on the supreme court."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "As the Democratic Party, THW seek to expand the number of justices on the Supreme Cour", "shape": "dot", "size": 10, "title": "As the Democratic Party, THW seek to expand the number of justices on the Supreme Cour"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THW make it compulsory for US presidents to gather 50% of senate approval from outside the party they affiliated with (opposing party, independent) when appointing the next Supreme Court Justice.", "shape": "dot", "size": 10, "title": "THW make it compulsory for US presidents to gather 50% of senate approval from outside the party they affiliated with (opposing party, independent) when appointing the next Supreme Court Justice."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "This House Would ban all political parties and require candidates to seek elections as independents", "shape": "dot", "size": 10, "title": "This House Would ban all political parties and require candidates to seek elections as independents"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "This house believes that regional alliances should not take a stance on the elections of their member states, assuming free and fair elections are possible in that member country", "shape": "dot", "size": 10, "title": "This house believes that regional alliances should not take a stance on the elections of their member states, assuming free and fair elections are possible in that member country"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 96, "label": "This house, as the progressive movement, supports progressive candidates running on centrist platforms solely in order to get elected", "shape": "dot", "size": 10, "title": "This house, as the progressive movement, supports progressive candidates running on centrist platforms solely in order to get elected"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 98, "label": "his house, as the progressive movement, supports progressive candidates running on centrist platforms solely in order to get elected", "shape": "dot", "size": 10, "title": "his house, as the progressive movement, supports progressive candidates running on centrist platforms solely in order to get elected"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THBT prominent non-\u0027establishment favourites\u0027 progressives (e.g. Bernie Sanders, AOC) should give up their career in the democratic party and seek political platform elsewhere", "shape": "dot", "size": 10, "title": "THBT prominent non-\u0027establishment favourites\u0027 progressives (e.g. Bernie Sanders, AOC) should give up their career in the democratic party and seek political platform elsewhere"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "In multi party states with a significant ethnic minority population, TH supports the creation of political parties with the primary purpose of pursuing the interests of that ethnic minority group", "shape": "dot", "size": 10, "title": "In multi party states with a significant ethnic minority population, TH supports the creation of political parties with the primary purpose of pursuing the interests of that ethnic minority group"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "In countries where most citizens have tribal identities, THBT legislative bodies should provide significant legislative representation to tribal chiefs", "shape": "dot", "size": 10, "title": "In countries where most citizens have tribal identities, THBT legislative bodies should provide significant legislative representation to tribal chiefs"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "That legislative bodies (e.g. parliament, congress, senate, councils) should be formed by sortition democracy.", "shape": "dot", "size": 10, "title": "That legislative bodies (e.g. parliament, congress, senate, councils) should be formed by sortition democracy."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THBT Joe Biden should choose to run on a \"Medicare-for-All\" platform", "shape": "dot", "size": 10, "title": "THBT Joe Biden should choose to run on a \"Medicare-for-All\" platform"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "That, as a lifelong Republican, we would vote for Joe Biden", "shape": "dot", "size": 10, "title": "That, as a lifelong Republican, we would vote for Joe Biden"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THBT Joe Biden should have picked Elizabeth Warren as the Democratic Party\u0027s Vice Presidential candidate.", "shape": "dot", "size": 10, "title": "THBT Joe Biden should have picked Elizabeth Warren as the Democratic Party\u0027s Vice Presidential candidate."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "TH, as Joe Biden, would embrace a Green New Deal", "shape": "dot", "size": 10, "title": "TH, as Joe Biden, would embrace a Green New Deal"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "That, as Joe Biden, we would choose to run on a \u2018Medicare-for-All\u2019 platform.", "shape": "dot", "size": 10, "title": "That, as Joe Biden, we would choose to run on a \u2018Medicare-for-All\u2019 platform."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 102, "label": "That, as Joe Biden, we would prioritize solving economic inequality over racial issues in the campaign", "shape": "dot", "size": 10, "title": "That, as Joe Biden, we would prioritize solving economic inequality over racial issues in the campaign"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THBT US presidential debates bring more harms than good", "shape": "dot", "size": 10, "title": "THBT US presidential debates bring more harms than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THBT all acts of election campaign should be prohibited with the exception of public debates", "shape": "dot", "size": 10, "title": "THBT all acts of election campaign should be prohibited with the exception of public debates"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "As Bernie Sanders voters, THW vote for trump", "shape": "dot", "size": 10, "title": "As Bernie Sanders voters, THW vote for trump"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 122, "label": "TH, as the Democratic National Committee, would support Bernie Sanders", "shape": "dot", "size": 10, "title": "TH, as the Democratic National Committee, would support Bernie Sanders"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "That young people should reject traditionally empowered political parties.", "shape": "dot", "size": 10, "title": "That young people should reject traditionally empowered political parties."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THW break up persistently dominant political parties in emerging/developing democracies (e.g. the ANC in South Africa, the Awami League in Bangladesh)", "shape": "dot", "size": 10, "title": "THW break up persistently dominant political parties in emerging/developing democracies (e.g. the ANC in South Africa, the Awami League in Bangladesh)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THW break up persistently dominant political parties in emerging/developing democracies (e.g. the ANC in South Africa)", "shape": "dot", "size": 10, "title": "THW break up persistently dominant political parties in emerging/developing democracies (e.g. the ANC in South Africa)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THBT courts in emerging democracies should break up constantly dominant political parties", "shape": "dot", "size": 10, "title": "THBT courts in emerging democracies should break up constantly dominant political parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 101, "label": "This House Believes That Joe Biden should pick Elizabeth Warren as his Vice President running mate.", "shape": "dot", "size": 10, "title": "This House Believes That Joe Biden should pick Elizabeth Warren as his Vice President running mate."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 110, "label": "This House Believes That Bernie Sanders would have been better than Joe Biden as the Democratic Presidential nominee.", "shape": "dot", "size": 10, "title": "This House Believes That Bernie Sanders would have been better than Joe Biden as the Democratic Presidential nominee."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 117, "label": "That as the superdelegates, we would give the nomination to Biden", "shape": "dot", "size": 10, "title": "That as the superdelegates, we would give the nomination to Biden"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 97, "label": "TH, as the Biden campaign, would pick Elizabeth Warren as our Vice President", "shape": "dot", "size": 10, "title": "TH, as the Biden campaign, would pick Elizabeth Warren as our Vice President"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 114, "label": "That states should be allowed to buy and sell votes in international organizations", "shape": "dot", "size": 10, "title": "That states should be allowed to buy and sell votes in international organizations"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THBT spouses of political figures should not be recognized as public figures.", "shape": "dot", "size": 10, "title": "THBT spouses of political figures should not be recognized as public figures."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "THBT developing states are better off with elite-led technocratic governments as opposed to democratic ones", "shape": "dot", "size": 10, "title": "THBT developing states are better off with elite-led technocratic governments as opposed to democratic ones"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 93, "label": "THP the rule of the governing AI, with elections on priorities over, traditional representative democracy", "shape": "dot", "size": 10, "title": "THP the rule of the governing AI, with elections on priorities over, traditional representative democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 113, "label": "In times of crisis, THP a technocracy over a democracy", "shape": "dot", "size": 10, "title": "In times of crisis, THP a technocracy over a democracy"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 99, "label": "THBT it is in the interest of the Aam Aadmi Party to join in a coalition with the Indian National Congress before contesting in the next general election.", "shape": "dot", "size": 10, "title": "THBT it is in the interest of the Aam Aadmi Party to join in a coalition with the Indian National Congress before contesting in the next general election."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 120, "label": "That it is in the interest of the Indian state for AAP to form a coalition with the INC to contest in upcoming general elections.", "shape": "dot", "size": 10, "title": "That it is in the interest of the Indian state for AAP to form a coalition with the INC to contest in upcoming general elections."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 119, "label": "That we should hold all state presidential primary elections simultaneously", "shape": "dot", "size": 10, "title": "That we should hold all state presidential primary elections simultaneously"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 105, "label": "TH, as Bernie Sanders, Would have stayed in the race as opposed to dropping out", "shape": "dot", "size": 10, "title": "TH, as Bernie Sanders, Would have stayed in the race as opposed to dropping out"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 118, "label": "That we would allow political parties to make binding electoral promises that, once broken, will immediately trigger re-election.", "shape": "dot", "size": 10, "title": "That we would allow political parties to make binding electoral promises that, once broken, will immediately trigger re-election."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THS opposition boycotts of all elections that are known to not be free or fair", "shape": "dot", "size": 10, "title": "THS opposition boycotts of all elections that are known to not be free or fair"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THS the democratisation of powerful civil service positions", "shape": "dot", "size": 10, "title": "THS the democratisation of powerful civil service positions"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THW give two votes for every Eastern Indonesian person voting in 2024 presidential election", "shape": "dot", "size": 10, "title": "THW give two votes for every Eastern Indonesian person voting in 2024 presidential election"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THR the celebritization of elected officials (ie Alexandria Ocasio-Cortez, Ilhan Omar)", "shape": "dot", "size": 10, "title": "THR the celebritization of elected officials (ie Alexandria Ocasio-Cortez, Ilhan Omar)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "Assuming Trump wins the 2020 Presidential Election, TH, as a Democrat citizen of a minority ethnicity in the US, would choose to find ways to immigrate", "shape": "dot", "size": 10, "title": "Assuming Trump wins the 2020 Presidential Election, TH, as a Democrat citizen of a minority ethnicity in the US, would choose to find ways to immigrate"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THW adopt a \"three strikes rule\" in disqualifying elected officials who fail to deliver on campaign promise", "shape": "dot", "size": 10, "title": "THW adopt a \"three strikes rule\" in disqualifying elected officials who fail to deliver on campaign promise"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "In the context of an upcoming election, TH, as a left-leaning journalist, would choose to not positively portray any conservative policies", "shape": "dot", "size": 10, "title": "In the context of an upcoming election, TH, as a left-leaning journalist, would choose to not positively portray any conservative policies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THBT the nominees and the winners of the Oscars should always be decided by public vote", "shape": "dot", "size": 10, "title": "THBT the nominees and the winners of the Oscars should always be decided by public vote"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "Assuming conservatives would accept the RUU-PKS bill afterwards, This House Believes That progressives should agree to explicitly draft the exclusion of sexual minorities from the scope of the law.", "shape": "dot", "size": 10, "title": "Assuming conservatives would accept the RUU-PKS bill afterwards, This House Believes That progressives should agree to explicitly draft the exclusion of sexual minorities from the scope of the law."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "As Conservative Gerindra Supporters, This House Regrets Gerindra\u2019s decision to carry candidate from Jokowi\u0027s family member.", "shape": "dot", "size": 10, "title": "As Conservative Gerindra Supporters, This House Regrets Gerindra\u2019s decision to carry candidate from Jokowi\u0027s family member."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "As member of minorities, This House Would condemn political candidate who pander to their stereotype despite coming from the same background (ie Andrew Yang saying claiming he\u0027s good at math, Kamala Harris saying she smokes weed to get \u0027street cred\u0027)", "shape": "dot", "size": 10, "title": "As member of minorities, This House Would condemn political candidate who pander to their stereotype despite coming from the same background (ie Andrew Yang saying claiming he\u0027s good at math, Kamala Harris saying she smokes weed to get \u0027street cred\u0027)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "You have been a moderate Republican for the last 10 years, and identify the most with the GOP establishment. THR the 2016 election of Donald Trump as president of the USA", "shape": "dot", "size": 10, "title": "You have been a moderate Republican for the last 10 years, and identify the most with the GOP establishment. THR the 2016 election of Donald Trump as president of the USA"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "THBT the Democratic Party leadership should publicly commit to using \"procedurally activist\" congressional tactics to pursue their policy objectives", "shape": "dot", "size": 10, "title": "THBT the Democratic Party leadership should publicly commit to using \"procedurally activist\" congressional tactics to pursue their policy objectives"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "This House Believes That the United States should prioritise democracy promotion (i.e. actively fund resistance groups, provide media attention \u0026 political backing etc.) in Eastern Europe as an official foreign policy objective.", "shape": "dot", "size": 10, "title": "This House Believes That the United States should prioritise democracy promotion (i.e. actively fund resistance groups, provide media attention \u0026 political backing etc.) in Eastern Europe as an official foreign policy objective."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THBT the US Democratic party should gain power by any means necessary, even if it means violating norms and laws in the process (stacking the courts, using \u0027the nuclear option\u0027, engaging in legal gerrymandering, etc)", "shape": "dot", "size": 10, "title": "THBT the US Democratic party should gain power by any means necessary, even if it means violating norms and laws in the process (stacking the courts, using \u0027the nuclear option\u0027, engaging in legal gerrymandering, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "If given majority in the Senate in the 2020 American election, THS the Democrats packing SCOTUS", "shape": "dot", "size": 10, "title": "If given majority in the Senate in the 2020 American election, THS the Democrats packing SCOTUS"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "THBT it is in the interest of the ruling party of Kazakhstan to hold free and fair local elections of akims and maslikhats", "shape": "dot", "size": 10, "title": "THBT it is in the interest of the ruling party of Kazakhstan to hold free and fair local elections of akims and maslikhats"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THW weigh shareholder votes in line with the length of time their shares have been held.", "shape": "dot", "size": 10, "title": "THW weigh shareholder votes in line with the length of time their shares have been held."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "THW, as the Democratic National Convention, support the Make Billionaires Pay Tax.", "shape": "dot", "size": 10, "title": "THW, as the Democratic National Convention, support the Make Billionaires Pay Tax."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "THW bar Hassan Diab and his cabinet from standing for parliamentary seats in Lebanon", "shape": "dot", "size": 10, "title": "THW bar Hassan Diab and his cabinet from standing for parliamentary seats in Lebanon"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "TH, as an average resident of Gaza, would support Hamas and their agendas", "shape": "dot", "size": 10, "title": "TH, as an average resident of Gaza, would support Hamas and their agendas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "TH, as a prominent pro-independence activist in Hong Kong, would align as pro-China in an effort to run for upcoming elections.", "shape": "dot", "size": 10, "title": "TH, as a prominent pro-independence activist in Hong Kong, would align as pro-China in an effort to run for upcoming elections."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "That the Democratic Party should not embrace \u0027Never Trump\u0027 Republicans.", "shape": "dot", "size": 10, "title": "That the Democratic Party should not embrace \u0027Never Trump\u0027 Republicans."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THR the use of nostalgia in political campaigning", "shape": "dot", "size": 10, "title": "THR the use of nostalgia in political campaigning"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "THR the focus on the personal identity and private actions of politicians", "shape": "dot", "size": 10, "title": "THR the focus on the personal identity and private actions of politicians"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 92, "label": "THBT it is in Mahathir\u0027s interest to cede leadership of the Opposition to Anwar Ibrahim", "shape": "dot", "size": 10, "title": "THBT it is in Mahathir\u0027s interest to cede leadership of the Opposition to Anwar Ibrahim"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 94, "label": "THBT the working class should reject Bernie Sanders as the face of the working class movement for being a part of the 1%.", "shape": "dot", "size": 10, "title": "THBT the working class should reject Bernie Sanders as the face of the working class movement for being a part of the 1%."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 103, "label": "That, as the minority resistance group, we would submit to the state", "shape": "dot", "size": 10, "title": "That, as the minority resistance group, we would submit to the state"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 107, "label": "THBT the Brazilian Workers\u0027 Party (PT, in Portuguese) should abandon the narrative that the ascension of Jair Bolsonaro\u0027s ideology (bolsonarismo) was inevitable", "shape": "dot", "size": 10, "title": "THBT the Brazilian Workers\u0027 Party (PT, in Portuguese) should abandon the narrative that the ascension of Jair Bolsonaro\u0027s ideology (bolsonarismo) was inevitable"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 115, "label": "THR the decision to let the FARC run as a political party.", "shape": "dot", "size": 10, "title": "THR the decision to let the FARC run as a political party."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 121, "label": "That King Abdullah al-Haj should have called a snap election in Malaysia , rather than appointing Muhyuddin Yasin as Prime Minister and allowing the current members of the Dewan Rakyat (lower house) to form a new governing coalition.", "shape": "dot", "size": 10, "title": "That King Abdullah al-Haj should have called a snap election in Malaysia , rather than appointing Muhyuddin Yasin as Prime Minister and allowing the current members of the Dewan Rakyat (lower house) to form a new governing coalition."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 123, "label": "The year is 2018. This house, as Imran Khan, would rather lose the election than side with the Establishment", "shape": "dot", "size": 10, "title": "The year is 2018. This house, as Imran Khan, would rather lose the election than side with the Establishment"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 125, "label": "TH, as Benny Gantz, Would form a government with the Likud and Netanyahu to avoid a March 2020 election", "shape": "dot", "size": 10, "title": "TH, as Benny Gantz, Would form a government with the Likud and Netanyahu to avoid a March 2020 election"}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 3, "width": 0.1}, {"from": 1, "to": 2, "width": 0.1}, {"from": 4, "to": 44, "width": 0.1}, {"from": 5, "to": 33, "width": 0.1}, {"from": 5, "to": 36, "width": 0.1}, {"from": 5, "to": 77, "width": 0.1}, {"from": 6, "to": 51, "width": 0.1}, {"from": 6, "to": 52, "width": 0.1}, {"from": 6, "to": 84, "width": 0.1}, {"from": 7, "to": 30, "width": 0.1}, {"from": 7, "to": 95, "width": 0.1}, {"from": 8, "to": 47, "width": 0.1}, {"from": 10, "to": 17, "width": 0.1}, {"from": 10, "to": 50, "width": 0.1}, {"from": 11, "to": 84, "width": 0.1}, {"from": 12, "to": 54, "width": 0.1}, {"from": 13, "to": 58, "width": 0.1}, {"from": 13, "to": 104, "width": 0.1}, {"from": 13, "to": 106, "width": 0.1}, {"from": 13, "to": 109, "width": 0.1}, {"from": 14, "to": 81, "width": 0.1}, {"from": 14, "to": 82, "width": 0.1}, {"from": 14, "to": 116, "width": 0.1}, {"from": 16, "to": 63, "width": 0.1}, {"from": 16, "to": 74, "width": 0.1}, {"from": 16, "to": 111, "width": 0.1}, {"from": 16, "to": 112, "width": 0.1}, {"from": 18, "to": 100, "width": 0.1}, {"from": 19, "to": 22, "width": 0.1}, {"from": 19, "to": 23, "width": 0.1}, {"from": 19, "to": 66, "width": 0.1}, {"from": 19, "to": 69, "width": 0.1}, {"from": 19, "to": 81, "width": 0.1}, {"from": 19, "to": 83, "width": 0.1}, {"from": 19, "to": 108, "width": 0.1}, {"from": 19, "to": 124, "width": 0.1}, {"from": 21, "to": 56, "width": 0.1}, {"from": 22, "to": 66, "width": 0.1}, {"from": 22, "to": 77, "width": 0.1}, {"from": 22, "to": 80, "width": 0.1}, {"from": 23, "to": 27, "width": 0.1}, {"from": 23, "to": 78, "width": 0.1}, {"from": 23, "to": 83, "width": 0.1}, {"from": 23, "to": 108, "width": 0.1}, {"from": 25, "to": 28, "width": 0.1}, {"from": 25, "to": 42, "width": 0.1}, {"from": 25, "to": 50, "width": 0.1}, {"from": 27, "to": 83, "width": 0.1}, {"from": 27, "to": 108, "width": 0.1}, {"from": 28, "to": 42, "width": 0.1}, {"from": 28, "to": 50, "width": 0.1}, {"from": 29, "to": 67, "width": 0.1}, {"from": 29, "to": 96, "width": 0.1}, {"from": 29, "to": 98, "width": 0.1}, {"from": 30, "to": 43, "width": 0.1}, {"from": 30, "to": 51, "width": 0.1}, {"from": 30, "to": 52, "width": 0.1}, {"from": 30, "to": 56, "width": 0.1}, {"from": 30, "to": 70, "width": 0.1}, {"from": 30, "to": 95, "width": 0.1}, {"from": 31, "to": 88, "width": 0.1}, {"from": 33, "to": 66, "width": 0.1}, {"from": 33, "to": 77, "width": 0.1}, {"from": 33, "to": 83, "width": 0.1}, {"from": 33, "to": 108, "width": 0.1}, {"from": 35, "to": 59, "width": 0.1}, {"from": 35, "to": 64, "width": 0.1}, {"from": 35, "to": 74, "width": 0.1}, {"from": 35, "to": 75, "width": 0.1}, {"from": 35, "to": 86, "width": 0.1}, {"from": 35, "to": 102, "width": 0.1}, {"from": 36, "to": 62, "width": 0.1}, {"from": 36, "to": 65, "width": 0.1}, {"from": 41, "to": 122, "width": 0.1}, {"from": 43, "to": 51, "width": 0.1}, {"from": 43, "to": 52, "width": 0.1}, {"from": 43, "to": 56, "width": 0.1}, {"from": 43, "to": 96, "width": 0.1}, {"from": 43, "to": 98, "width": 0.1}, {"from": 43, "to": 111, "width": 0.1}, {"from": 43, "to": 112, "width": 0.1}, {"from": 51, "to": 52, "width": 0.1}, {"from": 51, "to": 54, "width": 0.1}, {"from": 51, "to": 56, "width": 0.1}, {"from": 51, "to": 109, "width": 0.1}, {"from": 52, "to": 54, "width": 0.1}, {"from": 52, "to": 109, "width": 0.1}, {"from": 54, "to": 87, "width": 0.1}, {"from": 54, "to": 109, "width": 0.1}, {"from": 55, "to": 57, "width": 0.1}, {"from": 55, "to": 73, "width": 0.1}, {"from": 56, "to": 96, "width": 0.1}, {"from": 57, "to": 73, "width": 0.1}, {"from": 58, "to": 106, "width": 0.1}, {"from": 59, "to": 63, "width": 0.1}, {"from": 59, "to": 64, "width": 0.1}, {"from": 59, "to": 74, "width": 0.1}, {"from": 59, "to": 75, "width": 0.1}, {"from": 59, "to": 86, "width": 0.1}, {"from": 59, "to": 101, "width": 0.1}, {"from": 59, "to": 102, "width": 0.1}, {"from": 59, "to": 110, "width": 0.1}, {"from": 59, "to": 111, "width": 0.1}, {"from": 59, "to": 112, "width": 0.1}, {"from": 59, "to": 117, "width": 0.1}, {"from": 62, "to": 65, "width": 0.1}, {"from": 63, "to": 64, "width": 0.1}, {"from": 63, "to": 74, "width": 0.1}, {"from": 63, "to": 101, "width": 0.1}, {"from": 63, "to": 110, "width": 0.1}, {"from": 64, "to": 74, "width": 0.1}, {"from": 64, "to": 97, "width": 0.1}, {"from": 64, "to": 101, "width": 0.1}, {"from": 64, "to": 102, "width": 0.1}, {"from": 64, "to": 110, "width": 0.1}, {"from": 64, "to": 117, "width": 0.1}, {"from": 66, "to": 77, "width": 0.1}, {"from": 66, "to": 80, "width": 0.1}, {"from": 66, "to": 83, "width": 0.1}, {"from": 66, "to": 108, "width": 0.1}, {"from": 67, "to": 114, "width": 0.1}, {"from": 71, "to": 106, "width": 0.1}, {"from": 74, "to": 75, "width": 0.1}, {"from": 74, "to": 101, "width": 0.1}, {"from": 74, "to": 102, "width": 0.1}, {"from": 74, "to": 110, "width": 0.1}, {"from": 74, "to": 111, "width": 0.1}, {"from": 74, "to": 112, "width": 0.1}, {"from": 75, "to": 86, "width": 0.1}, {"from": 75, "to": 102, "width": 0.1}, {"from": 75, "to": 111, "width": 0.1}, {"from": 75, "to": 112, "width": 0.1}, {"from": 77, "to": 108, "width": 0.1}, {"from": 78, "to": 80, "width": 0.1}, {"from": 78, "to": 83, "width": 0.1}, {"from": 78, "to": 124, "width": 0.1}, {"from": 81, "to": 82, "width": 0.1}, {"from": 81, "to": 95, "width": 0.1}, {"from": 83, "to": 108, "width": 0.1}, {"from": 85, "to": 104, "width": 0.1}, {"from": 86, "to": 102, "width": 0.1}, {"from": 87, "to": 109, "width": 0.1}, {"from": 88, "to": 93, "width": 0.1}, {"from": 93, "to": 113, "width": 0.1}, {"from": 96, "to": 98, "width": 0.1}, {"from": 96, "to": 111, "width": 0.1}, {"from": 96, "to": 112, "width": 0.1}, {"from": 97, "to": 101, "width": 0.1}, {"from": 97, "to": 117, "width": 0.1}, {"from": 98, "to": 111, "width": 0.1}, {"from": 98, "to": 112, "width": 0.1}, {"from": 99, "to": 120, "width": 0.1}, {"from": 100, "to": 119, "width": 0.1}, {"from": 101, "to": 110, "width": 0.1}, {"from": 101, "to": 117, "width": 0.1}, {"from": 104, "to": 109, "width": 0.1}, {"from": 104, "to": 113, "width": 0.1}, {"from": 105, "to": 122, "width": 0.1}, {"from": 110, "to": 122, "width": 0.1}, {"from": 111, "to": 112, "width": 0.1}, {"from": 118, "to": 119, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

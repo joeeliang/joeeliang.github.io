@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "TH as Christians Opposes the commercialisation of Christmas", "shape": "dot", "size": 10, "title": "TH as Christians Opposes the commercialisation of Christmas"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THR the commercialisation of religious holidays", "shape": "dot", "size": 10, "title": "THR the commercialisation of religious holidays"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "TH celebrates the racialisation of Christianity", "shape": "dot", "size": 10, "title": "TH celebrates the racialisation of Christianity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "THR the commercialisation of spirituality", "shape": "dot", "size": 10, "title": "THR the commercialisation of spirituality"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THP a world where the dominant religion is Religion A as opposed to Religion B", "shape": "dot", "size": 10, "title": "THP a world where the dominant religion is Religion A as opposed to Religion B"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THW prefer a world where the dominant religion is religion X as opposed to religion Y", "shape": "dot", "size": 10, "title": "THW prefer a world where the dominant religion is religion X as opposed to religion Y"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "THW prefer a world where each believer established their own connection to God, rather than establishing one through an organised religion", "shape": "dot", "size": 10, "title": "THW prefer a world where each believer established their own connection to God, rather than establishing one through an organised religion"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "TH prefers a world where each believer established their own connection to God,rather than establishing one through organized religion", "shape": "dot", "size": 10, "title": "TH prefers a world where each believer established their own connection to God,rather than establishing one through organized religion"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "TH prefers a world in which every individual is perceived to have equal access to a deeper connection with religious deities (as opposed to e.g. religious leaders being perceived to have more such access)", "shape": "dot", "size": 10, "title": "TH prefers a world in which every individual is perceived to have equal access to a deeper connection with religious deities (as opposed to e.g. religious leaders being perceived to have more such access)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THP a world where people believed that God did not intervene at all over one where God has a plan and actively intervened in human affairs", "shape": "dot", "size": 10, "title": "THP a world where people believed that God did not intervene at all over one where God has a plan and actively intervened in human affairs"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THP a world where people predominantly believe that free will does not exist", "shape": "dot", "size": 10, "title": "THP a world where people predominantly believe that free will does not exist"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "THP a world where the belief or disbelief in God or Gods is seen as an involuntary decision", "shape": "dot", "size": 10, "title": "THP a world where the belief or disbelief in God or Gods is seen as an involuntary decision"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "TH prefers a world where Islam had its own centralised personal authority (like the Pope in Catholicism)", "shape": "dot", "size": 10, "title": "TH prefers a world where Islam had its own centralised personal authority (like the Pope in Catholicism)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "This House prefers a world where religions are more decentralised, as opposed to centralised (e.g. doctrinal differences existing between regions).", "shape": "dot", "size": 10, "title": "This House prefers a world where religions are more decentralised, as opposed to centralised (e.g. doctrinal differences existing between regions)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THW prefer a religion which preaches that one\u0027s fate in the material world is predetermined rather than one that preaches that one\u0027s choices influence it", "shape": "dot", "size": 10, "title": "THW prefer a religion which preaches that one\u0027s fate in the material world is predetermined rather than one that preaches that one\u0027s choices influence it"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THR the popular belief in free will", "shape": "dot", "size": 10, "title": "THR the popular belief in free will"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "THP a world without a belief in free will", "shape": "dot", "size": 10, "title": "THP a world without a belief in free will"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "This House prefers religions in which all individuals have roughly equal religious obligations and are encouraged to develop a personal connection with the divine, over religions in which religious obligation and access to the divine are concentrated in religious authority figures.", "shape": "dot", "size": 10, "title": "This House prefers religions in which all individuals have roughly equal religious obligations and are encouraged to develop a personal connection with the divine, over religions in which religious obligation and access to the divine are concentrated in religious authority figures."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THP a world where entry into Heaven is decided on peer-based evaulation as opposed to religious doctrine", "shape": "dot", "size": 10, "title": "THP a world where entry into Heaven is decided on peer-based evaulation as opposed to religious doctrine"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "TH, as a prominent religious leader of a major organised religion, would promote any scripture/interpretation/doctrine that says that the determinant factor of entering heaven is good deeds and not the level of faith/piety", "shape": "dot", "size": 10, "title": "TH, as a prominent religious leader of a major organised religion, would promote any scripture/interpretation/doctrine that says that the determinant factor of entering heaven is good deeds and not the level of faith/piety"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THP a world where there is no belief in the afterlife", "shape": "dot", "size": 10, "title": "THP a world where there is no belief in the afterlife"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THBT it is in the interests of organized religions to adopt the \"rigorous mission scheme\"", "shape": "dot", "size": 10, "title": "THBT it is in the interests of organized religions to adopt the \"rigorous mission scheme\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THBT it is in the interests of organized religions to adopt the \"rigorous mission scheme\"", "shape": "dot", "size": 10, "title": "THBT it is in the interests of organized religions to adopt the \"rigorous mission scheme\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "This House Supports the rise of atheist movements in Southeast Asia", "shape": "dot", "size": 10, "title": "This House Supports the rise of atheist movements in Southeast Asia"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "This House Supports the rise of atheist movements in Southeast Asia", "shape": "dot", "size": 10, "title": "This House Supports the rise of atheist movements in Southeast Asia"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "This House prefers to follow a religion where one\u0027s fate in the material world is predetermined, rather than one where one\u0027s choices and actions influence their fate", "shape": "dot", "size": 10, "title": "This House prefers to follow a religion where one\u0027s fate in the material world is predetermined, rather than one where one\u0027s choices and actions influence their fate"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THBT the belief \"that religious leaders have a deeper connection with their deities\" does more harm than good", "shape": "dot", "size": 10, "title": "THBT the belief \"that religious leaders have a deeper connection with their deities\" does more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "TH, as religious leaderships, would shift their strategy from increasing the number of believers towards prioritizing boosting loyalty amongst adherents to the religion.", "shape": "dot", "size": 10, "title": "TH, as religious leaderships, would shift their strategy from increasing the number of believers towards prioritizing boosting loyalty amongst adherents to the religion."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "TH, as the current Dalai Lama, W concede to Gyaincain Norbu as the legitimate Panchen Lama", "shape": "dot", "size": 10, "title": "TH, as the current Dalai Lama, W concede to Gyaincain Norbu as the legitimate Panchen Lama"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "TH, as religious minorities, would actively re-imagine their central figures as social activists rather than holy archetypes. For example, Jesus Christ as an activist for the disenfranchised rather than the Son of God", "shape": "dot", "size": 10, "title": "TH, as religious minorities, would actively re-imagine their central figures as social activists rather than holy archetypes. For example, Jesus Christ as an activist for the disenfranchised rather than the Son of God"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "In secular states with a majority religion, THW use religious/conservative language and rhetoric to spread environmental awareness", "shape": "dot", "size": 10, "title": "In secular states with a majority religion, THW use religious/conservative language and rhetoric to spread environmental awareness"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "As an average religious person, THR the emphasis on piety/performing acts of worship in religion", "shape": "dot", "size": 10, "title": "As an average religious person, THR the emphasis on piety/performing acts of worship in religion"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THP a world where God is seen as fallible, rather than infallible", "shape": "dot", "size": 10, "title": "THP a world where God is seen as fallible, rather than infallible"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THBT as the Christian church would actively recognize that the dogmas taught now is different from what it was in the past", "shape": "dot", "size": 10, "title": "THBT as the Christian church would actively recognize that the dogmas taught now is different from what it was in the past"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "THP the worship and belief of multiple deities (eg. Hinduism, Chinese folk religion) to that of a single deity (e.g. Judaism, Christianity, Islam).", "shape": "dot", "size": 10, "title": "THP the worship and belief of multiple deities (eg. Hinduism, Chinese folk religion) to that of a single deity (e.g. Judaism, Christianity, Islam)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THO the \"God\u0027s Plan\" narrative", "shape": "dot", "size": 10, "title": "THO the \"God\u0027s Plan\" narrative"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "This House Believes That preachers of Christian faiths should actively prioritise the virtue of \u0027struggling with God\u0027 over \u0027submission to God\u0027", "shape": "dot", "size": 10, "title": "This House Believes That preachers of Christian faiths should actively prioritise the virtue of \u0027struggling with God\u0027 over \u0027submission to God\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "THBT The Vatican should accept and integrate the Darwin\u0027s Theory of Evolution in describing the origins of life", "shape": "dot", "size": 10, "title": "THBT The Vatican should accept and integrate the Darwin\u0027s Theory of Evolution in describing the origins of life"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "TH, as Christians, regrets the rise of popular mainstream artists co-opting Gospel themes in their works (i.e. Kanye West Jesus is King)", "shape": "dot", "size": 10, "title": "TH, as Christians, regrets the rise of popular mainstream artists co-opting Gospel themes in their works (i.e. Kanye West Jesus is King)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THO New Atheism", "shape": "dot", "size": 10, "title": "THO New Atheism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THBT religions should promise reward in the afterlife as opposed to promising material reward in this life, with both outcomes contingent on faithful practice", "shape": "dot", "size": 10, "title": "THBT religions should promise reward in the afterlife as opposed to promising material reward in this life, with both outcomes contingent on faithful practice"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "TH house prefers karmic-based religious systems over religious systems based on eternal reward or punishment/ divine mercy.", "shape": "dot", "size": 10, "title": "TH house prefers karmic-based religious systems over religious systems based on eternal reward or punishment/ divine mercy."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THR the belief that forgiveness is a virtue", "shape": "dot", "size": 10, "title": "THR the belief that forgiveness is a virtue"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THP a world where epistemic humility is widely believed in, as opposed to a world where skepticism is widely believed in.", "shape": "dot", "size": 10, "title": "THP a world where epistemic humility is widely believed in, as opposed to a world where skepticism is widely believed in."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THP a world where Karmic reincarnation exists", "shape": "dot", "size": 10, "title": "THP a world where Karmic reincarnation exists"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "TH, as the Ministry of Magic W expose itself to the Muggle World", "shape": "dot", "size": 10, "title": "TH, as the Ministry of Magic W expose itself to the Muggle World"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "TH, as climate activists, would use interpretation of religious texts as a tool for climate action ( Eg invoking stories from the Ramayana\u2019s Aranya Kaand to create narratives around forests, etc.", "shape": "dot", "size": 10, "title": "TH, as climate activists, would use interpretation of religious texts as a tool for climate action ( Eg invoking stories from the Ramayana\u2019s Aranya Kaand to create narratives around forests, etc."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "THR the rise of celebrity preachers", "shape": "dot", "size": 10, "title": "THR the rise of celebrity preachers"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "TH regrets the ascension of the vision of atheism promoted by Richard Dawkins. Infoslide: Richard Dawkins, in his work \"\"The God Delusion\"\" argues that the tolerance of religion causes harm to society and individuals", "shape": "dot", "size": 10, "title": "TH regrets the ascension of the vision of atheism promoted by Richard Dawkins. Infoslide: Richard Dawkins, in his work \"\"The God Delusion\"\" argues that the tolerance of religion causes harm to society and individuals"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "That the Catholic Church should de-emphasise the concepts of Satan and Hell.", "shape": "dot", "size": 10, "title": "That the Catholic Church should de-emphasise the concepts of Satan and Hell."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "You are a 16th century english Catholic bishop. Henry VIII has established the Anglican Church in opposition to the Catholic Church. You have been invited by the King to join his church as Bishop. That you should join the Anglican Church.", "shape": "dot", "size": 10, "title": "You are a 16th century english Catholic bishop. Henry VIII has established the Anglican Church in opposition to the Catholic Church. You have been invited by the King to join his church as Bishop. That you should join the Anglican Church."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "Assuming it could be done without placing the burden of secrecy on adults, This House Prefers a world where individuals are unaware of the existence of organized religions for the duration of their childhoods", "shape": "dot", "size": 10, "title": "Assuming it could be done without placing the burden of secrecy on adults, This House Prefers a world where individuals are unaware of the existence of organized religions for the duration of their childhoods"}]);
+                  edges = new vis.DataSet([{"from": 1, "to": 4, "width": 0.1}, {"from": 1, "to": 18, "width": 0.1}, {"from": 4, "to": 18, "width": 0.1}, {"from": 4, "to": 34, "width": 0.1}, {"from": 6, "to": 12, "width": 0.1}, {"from": 6, "to": 22, "width": 0.1}, {"from": 6, "to": 24, "width": 0.1}, {"from": 6, "to": 25, "width": 0.1}, {"from": 10, "to": 13, "width": 0.1}, {"from": 10, "to": 40, "width": 0.1}, {"from": 12, "to": 14, "width": 0.1}, {"from": 12, "to": 21, "width": 0.1}, {"from": 12, "to": 22, "width": 0.1}, {"from": 12, "to": 24, "width": 0.1}, {"from": 12, "to": 25, "width": 0.1}, {"from": 12, "to": 49, "width": 0.1}, {"from": 13, "to": 29, "width": 0.1}, {"from": 13, "to": 38, "width": 0.1}, {"from": 21, "to": 25, "width": 0.1}, {"from": 21, "to": 51, "width": 0.1}, {"from": 22, "to": 24, "width": 0.1}, {"from": 22, "to": 25, "width": 0.1}, {"from": 22, "to": 31, "width": 0.1}, {"from": 22, "to": 40, "width": 0.1}, {"from": 22, "to": 49, "width": 0.1}, {"from": 24, "to": 25, "width": 0.1}, {"from": 24, "to": 31, "width": 0.1}, {"from": 24, "to": 40, "width": 0.1}, {"from": 24, "to": 49, "width": 0.1}, {"from": 25, "to": 49, "width": 0.1}, {"from": 25, "to": 51, "width": 0.1}, {"from": 29, "to": 38, "width": 0.1}, {"from": 31, "to": 39, "width": 0.1}, {"from": 35, "to": 38, "width": 0.1}, {"from": 38, "to": 40, "width": 0.1}, {"from": 42, "to": 43, "width": 0.1}, {"from": 44, "to": 45, "width": 0.1}, {"from": 48, "to": 49, "width": 0.1}, {"from": 48, "to": 51, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>

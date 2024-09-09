@@ -1,0 +1,287 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="lib/bindings/utils.js"></script>
+<link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+<script crossorigin="anonymous" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+<link href="lib/tom-select/tom-select.css" rel="stylesheet"/>
+<script src="lib/tom-select/tom-select.complete.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" rel="stylesheet">
+<script crossorigin="anonymous" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+<center>
+<h1></h1>
+</center>
+<style type="text/css">
+
+             #mynetwork {
+                 width: 1980px;
+                 height: 1500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+</link></head>
+<body>
+<div class="card" style="width: 100%">
+<div class="card-header" id="filter-menu" style="display: none;">
+<div class="row no-gutters">
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-item" onchange="updateFilter(value, 'item')">
+<option value="">Select a network item</option>
+<option value="edge">edge</option>
+<option value="node">node</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-property" onchange="updateFilter(value, 'property')">
+<option value="">Select a property...</option>
+</select>
+</div>
+<div class="col-3 pb-2">
+<select aria-label="Default select example" class="form-select" id="select-value">
+<option value="">Select value(s)...</option>
+</select>
+</div>
+<div class="col-1 pb-2">
+<button class="btn btn-primary btn-block" onclick="highlightFilter(filter);" type="button">Filter</button>
+</div>
+<div class="col-2 pb-2">
+<button class="btn btn-primary btn-block" onclick="clearFilter(true)" type="button">Reset Selection</button>
+</div>
+</div>
+</div>
+<div class="card-body" id="mynetwork"></div>
+</div>
+<script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 0, "label": "THBT feminist movement in the west should heavily promote the concept of \u0027self-partnership\u0027", "shape": "dot", "size": 10, "title": "THBT feminist movement in the west should heavily promote the concept of \u0027self-partnership\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 35, "label": "THBT the feminist movement in the West should heavily promote the concept of \u0027self-partnership\u0027", "shape": "dot", "size": 10, "title": "THBT the feminist movement in the West should heavily promote the concept of \u0027self-partnership\u0027"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 3, "label": "THBT the feminist movement should actively oppose the use of makeup", "shape": "dot", "size": 10, "title": "THBT the feminist movement should actively oppose the use of makeup"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 90, "label": "THBT the use of appearance to achieve feminist aims does more harm than good", "shape": "dot", "size": 10, "title": "THBT the use of appearance to achieve feminist aims does more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 4, "label": "THBT South Korean feminists should advocate for the conscription of women", "shape": "dot", "size": 10, "title": "THBT South Korean feminists should advocate for the conscription of women"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 26, "label": "THBT feminists should actively campaign for quotas and increased female involvement in the military", "shape": "dot", "size": 10, "title": "THBT feminists should actively campaign for quotas and increased female involvement in the military"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 61, "label": "THBT in countries where National Service is mandatory, feminists should push for the inclusion of women to be conscripted as well", "shape": "dot", "size": 10, "title": "THBT in countries where National Service is mandatory, feminists should push for the inclusion of women to be conscripted as well"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 63, "label": "THBT feminists should challenge militarism instead of advocating for the \"right to fight\" (ex. pushing for the inclusion of women in national draft registration and combat duty_", "shape": "dot", "size": 10, "title": "THBT feminists should challenge militarism instead of advocating for the \"right to fight\" (ex. pushing for the inclusion of women in national draft registration and combat duty_"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 6, "label": "THBT feminists from positions of privilege should actively refrain from taking leadership roles in the feminist movement.", "shape": "dot", "size": 10, "title": "THBT feminists from positions of privilege should actively refrain from taking leadership roles in the feminist movement."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 21, "label": "THBT women from privileged backgrounds should decline any senior or leadership positions within the feminist movement.", "shape": "dot", "size": 10, "title": "THBT women from privileged backgrounds should decline any senior or leadership positions within the feminist movement."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 7, "label": "THBT prominent male feminists should focus on dismantling gender norms which primarily harm men", "shape": "dot", "size": 10, "title": "THBT prominent male feminists should focus on dismantling gender norms which primarily harm men"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 24, "label": "THBT the feminist movement should campaign to deconstruct masculinity (ie. claiming that being assertive is bad) rather than service masculinity for feminist goals (ie. women can be assertive too)", "shape": "dot", "size": 10, "title": "THBT the feminist movement should campaign to deconstruct masculinity (ie. claiming that being assertive is bad) rather than service masculinity for feminist goals (ie. women can be assertive too)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 31, "label": "THBT the feminist movement including men in their campaigns and discussions does more harm than good", "shape": "dot", "size": 10, "title": "THBT the feminist movement including men in their campaigns and discussions does more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 8, "label": "This House Believes That feminist organizations should not support female political cadidates who campaign using traditional gender roles (eg marketing oneself as a good wife, over-emphasizing traditional motherhood)", "shape": "dot", "size": 10, "title": "This House Believes That feminist organizations should not support female political cadidates who campaign using traditional gender roles (eg marketing oneself as a good wife, over-emphasizing traditional motherhood)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 76, "label": "This house believes that the feminist movement should aggressively praise mothers and motherhood", "shape": "dot", "size": 10, "title": "This house believes that the feminist movement should aggressively praise mothers and motherhood"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 85, "label": "This House Believes That feminists should advocate for the destruction of the traditional family unit", "shape": "dot", "size": 10, "title": "This House Believes That feminists should advocate for the destruction of the traditional family unit"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 11, "label": "THBT the feminist movement should actively promote that women participate in the military and attempt to climb its hierarchy rather than oppose the military as a whole.", "shape": "dot", "size": 10, "title": "THBT the feminist movement should actively promote that women participate in the military and attempt to climb its hierarchy rather than oppose the military as a whole."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 69, "label": "That, in countries where military service is mandatory only for men, as self-proclaimed feminist women, we would actively volunteer in the military.", "shape": "dot", "size": 10, "title": "That, in countries where military service is mandatory only for men, as self-proclaimed feminist women, we would actively volunteer in the military."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 70, "label": "THBT the feminist movement should actively recruit conservative women", "shape": "dot", "size": 10, "title": "THBT the feminist movement should actively recruit conservative women"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 13, "label": "THBT feminists in Muslim-majority countries should advocate for the abolishment of Sharia Courts rather than working to reform it (e.g. advocating for more female judges, pushing for feminist interpretations of the Quran)", "shape": "dot", "size": 10, "title": "THBT feminists in Muslim-majority countries should advocate for the abolishment of Sharia Courts rather than working to reform it (e.g. advocating for more female judges, pushing for feminist interpretations of the Quran)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 44, "label": "THBT feminists in Muslim-majority countries should push for the reformation of sharia courts over the abolishment of it", "shape": "dot", "size": 10, "title": "THBT feminists in Muslim-majority countries should push for the reformation of sharia courts over the abolishment of it"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 88, "label": "That feminists in Islamic majority countries should attempt to work to reform Sharia courts from within rather than advocating their abolition.", "shape": "dot", "size": 10, "title": "That feminists in Islamic majority countries should attempt to work to reform Sharia courts from within rather than advocating their abolition."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 14, "label": "In conservative countries, THBT progressive women\u0027s groups should refrain from attacking female politicians regardless of their policies", "shape": "dot", "size": 10, "title": "In conservative countries, THBT progressive women\u0027s groups should refrain from attacking female politicians regardless of their policies"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 15, "label": "TH, as the mother of a girl living in a developing nation, would teach their daughter to embrace the persona of a \"modern working woman\"", "shape": "dot", "size": 10, "title": "TH, as the mother of a girl living in a developing nation, would teach their daughter to embrace the persona of a \"modern working woman\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 18, "label": "TH, as the mother of a girl living in a third world nation, would teach their daughter to embrace the persona of \"a modern working woman\"", "shape": "dot", "size": 10, "title": "TH, as the mother of a girl living in a third world nation, would teach their daughter to embrace the persona of \"a modern working woman\""}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 17, "label": "THBT that women belonging to privileged backgrounds should actively decline positions of power within the Feminist movement", "shape": "dot", "size": 10, "title": "THBT that women belonging to privileged backgrounds should actively decline positions of power within the Feminist movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 22, "label": "This House Believes That the world would be a better place if women from privileged backgrounds turned down any benefits arising from affirmative action programs", "shape": "dot", "size": 10, "title": "This House Believes That the world would be a better place if women from privileged backgrounds turned down any benefits arising from affirmative action programs"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 52, "label": "In universities where affirmative action for women exists, this house would institute affirmative action for men in departments where they are under-represented.", "shape": "dot", "size": 10, "title": "In universities where affirmative action for women exists, this house would institute affirmative action for men in departments where they are under-represented."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 28, "label": "THR the rise in icons and their cult of personalities in the feminist movement", "shape": "dot", "size": 10, "title": "THR the rise in icons and their cult of personalities in the feminist movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 71, "label": "THBT feminist movements should adopt feminist icons that are adversarial and embody violence as opposed to icons that promote traditional norms, monetary prosperity and working within the system through cooperation.", "shape": "dot", "size": 10, "title": "THBT feminist movements should adopt feminist icons that are adversarial and embody violence as opposed to icons that promote traditional norms, monetary prosperity and working within the system through cooperation."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 41, "label": "THBT capitalism has done more harm than good for feminism", "shape": "dot", "size": 10, "title": "THBT capitalism has done more harm than good for feminism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 43, "label": "THBT hustle culture has done more harm than good for feminism", "shape": "dot", "size": 10, "title": "THBT hustle culture has done more harm than good for feminism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 39, "label": "THBT feminists should never critique mothers\u2019 parenting except where it is obviously abusive or neglectful", "shape": "dot", "size": 10, "title": "THBT feminists should never critique mothers\u2019 parenting except where it is obviously abusive or neglectful"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 53, "label": "THBT feminists should never critique mothers\u2019 parenting except where it is obviously abusive or neglectful", "shape": "dot", "size": 10, "title": "THBT feminists should never critique mothers\u2019 parenting except where it is obviously abusive or neglectful"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 49, "label": "THBT feminism is in opposition to capitalism", "shape": "dot", "size": 10, "title": "THBT feminism is in opposition to capitalism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 58, "label": "THBT the feminist movement should actively work with liberal religious leaders to change the religions\u0027 perception about women.", "shape": "dot", "size": 10, "title": "THBT the feminist movement should actively work with liberal religious leaders to change the religions\u0027 perception about women."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 60, "label": "THBT feminists should reclaim and celebrate traits (such as empathy, nurturing) and activities (gardening, cooking) associated with femininity as empowering", "shape": "dot", "size": 10, "title": "THBT feminists should reclaim and celebrate traits (such as empathy, nurturing) and activities (gardening, cooking) associated with femininity as empowering"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 84, "label": "That feminists should celebrate domestic activities which are traditionally carried out by women (e.g. baking, gardening and knitting) as empowering and feminist activities", "shape": "dot", "size": 10, "title": "That feminists should celebrate domestic activities which are traditionally carried out by women (e.g. baking, gardening and knitting) as empowering and feminist activities"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 77, "label": "THBT Indian feminist movement movements should adopt Lakshmi as a symbol of the movement rather than Kali", "shape": "dot", "size": 10, "title": "THBT Indian feminist movement movements should adopt Lakshmi as a symbol of the movement rather than Kali"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 87, "label": "That as an Indian feminist we would identify more with Lakshmi than with Kali", "shape": "dot", "size": 10, "title": "That as an Indian feminist we would identify more with Lakshmi than with Kali"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 1, "label": "THO the romanticizing of women who buck traditional gender norms in popular media", "shape": "dot", "size": 10, "title": "THO the romanticizing of women who buck traditional gender norms in popular media"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 2, "label": "TH, as the feminist movement, celebrates the portrayal of women as the source of fear in films (ex. Miranda Priestly, Carrie, Dolores Umbridge)", "shape": "dot", "size": 10, "title": "TH, as the feminist movement, celebrates the portrayal of women as the source of fear in films (ex. Miranda Priestly, Carrie, Dolores Umbridge)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 5, "label": "THBT dating shows where women are in a position of power are good for feminism (e.g. the Bachelorette and If You are the One)", "shape": "dot", "size": 10, "title": "THBT dating shows where women are in a position of power are good for feminism (e.g. the Bachelorette and If You are the One)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 9, "label": "THBT explicit expressions of female sexuality in the entertainment industry has done more harm than good to the feminist movement (i.e. Cardi B\u2019s WAP)", "shape": "dot", "size": 10, "title": "THBT explicit expressions of female sexuality in the entertainment industry has done more harm than good to the feminist movement (i.e. Cardi B\u2019s WAP)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 10, "label": "THBT the feminist movement should aggressively advocate for the removal of children\u0027s cartoons that fail The Maisy test", "shape": "dot", "size": 10, "title": "THBT the feminist movement should aggressively advocate for the removal of children\u0027s cartoons that fail The Maisy test"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 12, "label": "THBT freedom movements in authoritarian regimes should prioritize women as their leaders (e.g. Maria Kolesnikova in Belarus, Aung San Suu Kyi in Myanmar, Alaa Salah in Sudan)", "shape": "dot", "size": 10, "title": "THBT freedom movements in authoritarian regimes should prioritize women as their leaders (e.g. Maria Kolesnikova in Belarus, Aung San Suu Kyi in Myanmar, Alaa Salah in Sudan)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 16, "label": "THS the use of Erotic Capital in women\u0027s career development", "shape": "dot", "size": 10, "title": "THS the use of Erotic Capital in women\u0027s career development"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 19, "label": "TH, as the feminist movement, would promote narratives about the importance of relying on and supporting other women (e.g. \u0027sisterhood\u0027), as opposed to emphasising self-reliance.", "shape": "dot", "size": 10, "title": "TH, as the feminist movement, would promote narratives about the importance of relying on and supporting other women (e.g. \u0027sisterhood\u0027), as opposed to emphasising self-reliance."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 20, "label": "THBT feminists should actively oppose narratives that instrumentalise the benefits of gender equality (eg: productivity benefits of diversity, economic growth)", "shape": "dot", "size": 10, "title": "THBT feminists should actively oppose narratives that instrumentalise the benefits of gender equality (eg: productivity benefits of diversity, economic growth)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 23, "label": "THW abolish sex-based segregation in sports in favour of ability-based segregation", "shape": "dot", "size": 10, "title": "THW abolish sex-based segregation in sports in favour of ability-based segregation"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 25, "label": "THO the notion that marriage is incompatible with feminism", "shape": "dot", "size": 10, "title": "THO the notion that marriage is incompatible with feminism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 27, "label": "THBT the feminist movement should encourage women in the developing world to take up vigilante justice", "shape": "dot", "size": 10, "title": "THBT the feminist movement should encourage women in the developing world to take up vigilante justice"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 29, "label": "THBT feminists should oppose the rise of anti rape products and services", "shape": "dot", "size": 10, "title": "THBT feminists should oppose the rise of anti rape products and services"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 30, "label": "THR the rise of third wave feminism", "shape": "dot", "size": 10, "title": "THR the rise of third wave feminism"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 32, "label": "THS the attacks of feminists on conservative men based on their masculinity, (e..g. the Shapiro WAP parody, mocking MRAs for being single and living with their parents)", "shape": "dot", "size": 10, "title": "THS the attacks of feminists on conservative men based on their masculinity, (e..g. the Shapiro WAP parody, mocking MRAs for being single and living with their parents)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 33, "label": "TH, as prominent TERFs, would publicly support and financially donate to freedom of gender expression causes that do not contradict with our core belief (donating to cross-dress fashion labels, norm of asking prefered gender pronoun, etc)", "shape": "dot", "size": 10, "title": "TH, as prominent TERFs, would publicly support and financially donate to freedom of gender expression causes that do not contradict with our core belief (donating to cross-dress fashion labels, norm of asking prefered gender pronoun, etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 34, "label": "With the benefit of hindsight, THBT Buddha should have pursued equality for gender in his teaching even at the cost of the decreasing societal support", "shape": "dot", "size": 10, "title": "With the benefit of hindsight, THBT Buddha should have pursued equality for gender in his teaching even at the cost of the decreasing societal support"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 36, "label": "THBT the feminist movement should focus its efforts on encouraging men to \"lean out\" rather than on encouraging women to \"lean in\".", "shape": "dot", "size": 10, "title": "THBT the feminist movement should focus its efforts on encouraging men to \"lean out\" rather than on encouraging women to \"lean in\"."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 37, "label": "TH, as the feminist movement, would advocate for aggressive government intervention to counteract behaviours which the feminist movement determines are predominantly the outcome of adaptive preference", "shape": "dot", "size": 10, "title": "TH, as the feminist movement, would advocate for aggressive government intervention to counteract behaviours which the feminist movement determines are predominantly the outcome of adaptive preference"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 38, "label": "This House Supports the existence of female vigilante groups (i.e the Gulabi Gang, Red Brigade) in developing nations.", "shape": "dot", "size": 10, "title": "This House Supports the existence of female vigilante groups (i.e the Gulabi Gang, Red Brigade) in developing nations."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 40, "label": "TH celebrates the rise of sexually-explicit expressions by female artists in mainstream pop music (including but not limited to \"WAP\")", "shape": "dot", "size": 10, "title": "TH celebrates the rise of sexually-explicit expressions by female artists in mainstream pop music (including but not limited to \"WAP\")"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 42, "label": "THS female athletes who capitalize on their sexuality to increase the viewership of female sporting leagues", "shape": "dot", "size": 10, "title": "THS female athletes who capitalize on their sexuality to increase the viewership of female sporting leagues"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 45, "label": "TH prefers a world with less LGBT representation in pop culture over a world in which the majority of representativeness involves tropes such as \"bury your gays\" and male feminization", "shape": "dot", "size": 10, "title": "TH prefers a world with less LGBT representation in pop culture over a world in which the majority of representativeness involves tropes such as \"bury your gays\" and male feminization"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 46, "label": "That as established feminist artists, we should systematically produce art and media that actively ridicules heroic masculine archetypes", "shape": "dot", "size": 10, "title": "That as established feminist artists, we should systematically produce art and media that actively ridicules heroic masculine archetypes"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 47, "label": "That as the Global Feminist Movement we would support anti-capitalist movements (Occupy Wallstreet etc)", "shape": "dot", "size": 10, "title": "That as the Global Feminist Movement we would support anti-capitalist movements (Occupy Wallstreet etc)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 48, "label": "THR the ideological dominance of the left in the feminist movement", "shape": "dot", "size": 10, "title": "THR the ideological dominance of the left in the feminist movement"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 50, "label": "As feminist, THO such coverage", "shape": "dot", "size": 10, "title": "As feminist, THO such coverage"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 51, "label": "TH, as the feminist movement, would oppose the practice of female pop artists sexualising themselves in their work.", "shape": "dot", "size": 10, "title": "TH, as the feminist movement, would oppose the practice of female pop artists sexualising themselves in their work."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 54, "label": "THBT feminists should adopt \"call-in\" instead of \"call-out\" as their dominant strategy.", "shape": "dot", "size": 10, "title": "THBT feminists should adopt \"call-in\" instead of \"call-out\" as their dominant strategy."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 55, "label": "THBT the feminist movement should support polyamorous relationships", "shape": "dot", "size": 10, "title": "THBT the feminist movement should support polyamorous relationships"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 56, "label": "TH, as the feminist movement, would advocate for the ban of violent/ unrealistic porn.", "shape": "dot", "size": 10, "title": "TH, as the feminist movement, would advocate for the ban of violent/ unrealistic porn."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 57, "label": "THP the hypersexualisation of men rather than the desexualisation of women", "shape": "dot", "size": 10, "title": "THP the hypersexualisation of men rather than the desexualisation of women"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 59, "label": "THR the prominent usage of self deprecating humour by female poltiicians", "shape": "dot", "size": 10, "title": "THR the prominent usage of self deprecating humour by female poltiicians"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 62, "label": "THBT feminists in India should attempt to infiltrate and reform the arranged marriage industry as opposed to fight for its abolishment", "shape": "dot", "size": 10, "title": "THBT feminists in India should attempt to infiltrate and reform the arranged marriage industry as opposed to fight for its abolishment"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 64, "label": "THBT feminists should primarily combat pseudo-scientific claims of sex and gender based differences (e.g. claims that men are more intelligent/brave/strong) on the basis of their scientific inaccuracy as opposed to focusing on deconstructing the social value placed on those differences", "shape": "dot", "size": 10, "title": "THBT feminists should primarily combat pseudo-scientific claims of sex and gender based differences (e.g. claims that men are more intelligent/brave/strong) on the basis of their scientific inaccuracy as opposed to focusing on deconstructing the social value placed on those differences"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 65, "label": "THS the narrative that traditionally feminine qualities (e.g. compassion, kindness) enable female leaders to better deal with times of crisis", "shape": "dot", "size": 10, "title": "THS the narrative that traditionally feminine qualities (e.g. compassion, kindness) enable female leaders to better deal with times of crisis"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 66, "label": "That the #MeToo movement has failed working class women.", "shape": "dot", "size": 10, "title": "That the #MeToo movement has failed working class women."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 67, "label": "That Non-Western LGBTQ activists should reject sex positivity", "shape": "dot", "size": 10, "title": "That Non-Western LGBTQ activists should reject sex positivity"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 68, "label": "That, as a woman of colour living in a majority-white country, we would embrace, compete in and establish national beauty pageants for women of our ethnic heritage.", "shape": "dot", "size": 10, "title": "That, as a woman of colour living in a majority-white country, we would embrace, compete in and establish national beauty pageants for women of our ethnic heritage."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 72, "label": "This house believes that feminists should criticise decisions made by women that seem to entrench patriarchal norms even where women claim it is their choice (e.g. foregoing careers to raise children, having cosmetic surgery).", "shape": "dot", "size": 10, "title": "This house believes that feminists should criticise decisions made by women that seem to entrench patriarchal norms even where women claim it is their choice (e.g. foregoing careers to raise children, having cosmetic surgery)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 73, "label": "THW make income tax for all women directly proportional to the national wage gap (e.g. if women earn on average 70% of what men earn, they would pay 70% of the income tax men pay for the same salary)", "shape": "dot", "size": 10, "title": "THW make income tax for all women directly proportional to the national wage gap (e.g. if women earn on average 70% of what men earn, they would pay 70% of the income tax men pay for the same salary)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 74, "label": "THO the depiction of women in mythology as feminists (eg: Athena, Draupadi)", "shape": "dot", "size": 10, "title": "THO the depiction of women in mythology as feminists (eg: Athena, Draupadi)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 75, "label": "THP a world where, starting tomorrow, women can shoot lightning from their fingertips", "shape": "dot", "size": 10, "title": "THP a world where, starting tomorrow, women can shoot lightning from their fingertips"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 78, "label": "TH supports the creation of feminist political parties", "shape": "dot", "size": 10, "title": "TH supports the creation of feminist political parties"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 79, "label": "THBT women in politics actively moving away from \"the pantsuit\" does more harm than good", "shape": "dot", "size": 10, "title": "THBT women in politics actively moving away from \"the pantsuit\" does more harm than good"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 80, "label": "TH, as a feminist, R the narrative that God is a Woman.", "shape": "dot", "size": 10, "title": "TH, as a feminist, R the narrative that God is a Woman."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 81, "label": "THBT feminists should not use rhetoric about women being more empathetic or more caring than men as part of their advocacy (e.g. \u201cWomen are good leaders because they are more gentle and nurturing.\u201d)", "shape": "dot", "size": 10, "title": "THBT feminists should not use rhetoric about women being more empathetic or more caring than men as part of their advocacy (e.g. \u201cWomen are good leaders because they are more gentle and nurturing.\u201d)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 82, "label": "THR the narrative that \u0027women can have it all\u0027 (career, family, children, etc.)", "shape": "dot", "size": 10, "title": "THR the narrative that \u0027women can have it all\u0027 (career, family, children, etc.)"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 83, "label": "THBT the feminist movements in Central Asian states should also focus on gender issues that affect men (toxic masculinity etc.) rather than exclusively focus on the issues that affect only women", "shape": "dot", "size": 10, "title": "THBT the feminist movements in Central Asian states should also focus on gender issues that affect men (toxic masculinity etc.) rather than exclusively focus on the issues that affect only women"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 86, "label": "THBT feminist organizations should prioritize progressive, well off communities as opposed to communities that are more financially needy, but choose to adhere to strong traditional gender roles", "shape": "dot", "size": 10, "title": "THBT feminist organizations should prioritize progressive, well off communities as opposed to communities that are more financially needy, but choose to adhere to strong traditional gender roles"}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 89, "label": "This House, as the feminist movement, would push for the sexualisation of religious attires (eg. hijab/saree/cheongsum).", "shape": "dot", "size": 10, "title": "This House, as the feminist movement, would push for the sexualisation of religious attires (eg. hijab/saree/cheongsum)."}, {"color": "#97c2fc", "font": {"color": "white", "size": 5}, "id": 91, "label": "This House believes that the feminist movement should support the narrative that \"beauty does not matter\" over the narrative that \"all bodies are beautiful\".", "shape": "dot", "size": 10, "title": "This House believes that the feminist movement should support the narrative that \"beauty does not matter\" over the narrative that \"all bodies are beautiful\"."}]);
+                  edges = new vis.DataSet([{"from": 0, "to": 35, "width": 0.1}, {"from": 3, "to": 90, "width": 0.1}, {"from": 4, "to": 26, "width": 0.1}, {"from": 4, "to": 61, "width": 0.1}, {"from": 4, "to": 63, "width": 0.1}, {"from": 6, "to": 21, "width": 0.1}, {"from": 7, "to": 24, "width": 0.1}, {"from": 7, "to": 31, "width": 0.1}, {"from": 8, "to": 76, "width": 0.1}, {"from": 8, "to": 85, "width": 0.1}, {"from": 11, "to": 24, "width": 0.1}, {"from": 11, "to": 26, "width": 0.1}, {"from": 11, "to": 61, "width": 0.1}, {"from": 11, "to": 63, "width": 0.1}, {"from": 11, "to": 69, "width": 0.1}, {"from": 11, "to": 70, "width": 0.1}, {"from": 13, "to": 44, "width": 0.1}, {"from": 13, "to": 88, "width": 0.1}, {"from": 14, "to": 70, "width": 0.1}, {"from": 15, "to": 18, "width": 0.1}, {"from": 17, "to": 21, "width": 0.1}, {"from": 17, "to": 31, "width": 0.1}, {"from": 22, "to": 52, "width": 0.1}, {"from": 24, "to": 31, "width": 0.1}, {"from": 26, "to": 61, "width": 0.1}, {"from": 26, "to": 63, "width": 0.1}, {"from": 26, "to": 69, "width": 0.1}, {"from": 26, "to": 70, "width": 0.1}, {"from": 28, "to": 71, "width": 0.1}, {"from": 31, "to": 41, "width": 0.1}, {"from": 31, "to": 43, "width": 0.1}, {"from": 31, "to": 70, "width": 0.1}, {"from": 39, "to": 53, "width": 0.1}, {"from": 39, "to": 76, "width": 0.1}, {"from": 41, "to": 43, "width": 0.1}, {"from": 41, "to": 49, "width": 0.1}, {"from": 44, "to": 88, "width": 0.1}, {"from": 53, "to": 76, "width": 0.1}, {"from": 58, "to": 70, "width": 0.1}, {"from": 60, "to": 84, "width": 0.1}, {"from": 61, "to": 63, "width": 0.1}, {"from": 63, "to": 70, "width": 0.1}, {"from": 76, "to": 85, "width": 0.1}, {"from": 77, "to": 87, "width": 0.1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+</body>
+</html>
