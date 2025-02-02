@@ -46,23 +46,23 @@ function draw() {
     x: point1.x + l2 * scale * sin(theta2),
     y: point1.y + l2 * scale * cos(theta2)
   };
-
   if (prev[1]){
     trace.stroke(230);
+    trace.strokeWeight(5);  // Add this line to make the stroke thicker
     trace.line(prev[0],prev[1], point2.x, point2.y);
   }
 
-  fill(0);
-  ellipse(offset.x, offset.y, 8, 8);
+  // fill(0);
+  // ellipse(offset.x, offset.y, 8, 8);
 
-  fill(13, 23, 219);
-  ellipse(point1.x, point1.y, 15, 15);
+  // fill(13, 23, 219);
+  // ellipse(point1.x, point1.y, 15, 15);
 
-  fill(13, 23, 219);
-  ellipse(point2.x, point2.y, 15, 15);
+  // fill(13, 23, 219);
+  // ellipse(point2.x, point2.y, 15, 15);
 
-  line(offset.x, offset.y, point1.x, point1.y);
-  line(point1.x, point1.y, point2.x, point2.y);
+  // line(offset.x, offset.y, point1.x, point1.y);
+  // line(point1.x, point1.y, point2.x, point2.y);
   prev = [point2.x, point2.y]
 }
 
